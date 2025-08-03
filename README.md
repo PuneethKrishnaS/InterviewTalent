@@ -1,4 +1,4 @@
-# 🎯 Interview Talent — AI-Powered Interview Mastery Platform
+# 🎯 Interview Talent — AI-powered interview preparation platform
 
 ## 🌟 Project Overview
 
