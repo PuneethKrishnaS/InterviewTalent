@@ -15,10 +15,7 @@ export const connectDB = async () => {
       console.log(error);
     });
 
-    app.listen(3000, () => {
-      console.log("App is listing on port 3000");
-      console.log(connection.connection.host);
-    });
+    console.log(connection.connection.host);
   } catch (error) {
     console.error("mongoDB connection error " + error);
   }
