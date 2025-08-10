@@ -6,6 +6,5 @@ dotenv.config({ path: ".env" });
 connectDB();
 
 app.listen(process.env.PORT,()=>{
-    console.log("running on port " + process.env.PORT);
-
+    console.log(`running on http://localhost:${process.env.PORT}/`);
 })

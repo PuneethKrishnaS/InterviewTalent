@@ -4,7 +4,7 @@ import jwt from "jsonwebtoken";
 
 const userSchema = new mongoose.Schema(
   {
-    name: {
+    userName: {
       first: {
         type: String,
         required: [true, "User name is required"],
@@ -35,6 +35,9 @@ const userSchema = new mongoose.Schema(
       minlength: [6, "Password must be at least 6 characters long"],
       trim: true,
     },
+    refreshToken: {
+      type: String,
+    },
 
     isGoogleLinked: {
       type: Boolean,
@@ -45,7 +48,7 @@ const userSchema = new mongoose.Schema(
       default: false,
     },
 
-    profileImage: String,
+    profileImage: String, //cloud URL
 
     performanceMetrics: {
       interviewsCompleted: {
@@ -68,8 +71,14 @@ const userSchema = new mongoose.Schema(
 );
 
 userSchema.pre("save", async function (next) {
-  if (!this.isModified(this.password)) return next();
-  this.password = bcrypt.hash(this.password, 10);
+  if (!this.isModified("password")) return next();
+
+  try {
+    this.password = await bcrypt.hash(this.password, 10);
+    next();
+  } catch (err) {
+    return next(err);
+  }
 });
 
 userSchema.methods.isPasswordCorrect = async function (password) {

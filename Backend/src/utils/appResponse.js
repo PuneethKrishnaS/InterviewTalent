@@ -6,3 +6,5 @@ class appResponse {
     this.statusCode = statusCode < 400;
   }
 }
+
+export { appResponse };
