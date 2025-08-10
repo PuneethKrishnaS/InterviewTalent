@@ -2,7 +2,7 @@ import Joi from "joi";
 
 const symbolRegex = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/;
 
-const userSchemaValidater = Joi.object({
+const userSignupValidater = Joi.object({
   userName: Joi.object({
     first: Joi.string().min(3).max(50).trim().required().label("First name"),
     last: Joi.string().max(50).trim().optional().label("Last name"),
@@ -30,4 +30,4 @@ const userSchemaValidater = Joi.object({
     }),
 });
 
-export { userSchemaValidater };
+export { userSignupValidater };
