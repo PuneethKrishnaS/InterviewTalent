@@ -3,9 +3,10 @@ import { User } from "../models/user.model.js";
 import { appError } from "../utils/appError.js";
 import { appResponse } from "../utils/appResponse.js";
 import { userSignupValidater } from "../validators/user.validators.js";
+import jwt from "jsonwebtoken";
 
 const generateAccessAndRefreshToken = async (user_id) => {
-  const user = await User.findOne(user_id);
+  const user = await User.findById(user_id);
 
   const accessToken = user.generateAccessToken();
   const refreshToken = user.generateRefreshToken();
@@ -15,6 +16,45 @@ const generateAccessAndRefreshToken = async (user_id) => {
 
   return { accessToken, refreshToken };
 };
+
+const refreshAccessAndRefreshToken = asyncHandler(async (req, res) => {
+  const incommingRefreshToken =
+    req.cookies?.refreshToken ||
+    res.header("Authorization")?.replace("Bearer ", "") ||
+    req.body.refreshToken;
+
+  if (!incommingRefreshToken) {
+    throw new appError(401, "Refresh token required");
+  }
+
+  try {
+    const decodedInfo = jwt.verify(
+      incommingRefreshToken,
+      process.env.ACCESS_TOKEN_SECRET
+    );
+
+    const user = await User.findById(decodedInfo._id).select(
+      "-password -refreshToken"
+    );
+
+    if (!user || user.refreshToken !== incommingRefreshToken) {
+      throw new appError(401, "Invalid refresh token");
+    }
+
+    const newRefreshToken = user.generateRefreshToken();
+    const accessToken = user.generateAccessToken();
+
+    user.refreshToken = newRefreshToken;
+    await user.save({ validateBeforeSave: false });
+
+    res
+      .cookie("accessToken", accessToken, { httpOnly: true, secure: true })
+      .cookie("refreshToken", newRefreshToken, { httpOnly: true, secure: true })
+      .json(new appResponse(200, { accessToken }, "Token refreshed"));
+  } catch (error) {
+    throw new appError(401, "Invalid or expired refresh token");
+  }
+});
 
 const registerUser = asyncHandler(async (req, res) => {
   //validate inputs
@@ -94,7 +134,9 @@ const loginUser = asyncHandler(async (req, res) => {
     user._id
   );
 
-  const userLogin = await User.findById(user._id).select("-password -refreshToken");
+  const userLogin = await User.findById(user._id).select(
+    "-password -refreshToken"
+  );
 
   return res
     .status(200)
@@ -126,4 +168,16 @@ const logoutUser = asyncHandler(async (req, res) => {
     .json(new appResponse(200, {}, "User Logged Out"));
 });
 
-export { registerUser, loginUser, logoutUser };
+const getCurrentUser = asyncHandler(async (req, res) => {
+  res
+    .status(200)
+    .json(new appResponse(200, req.user, "User fetched successfully"));
+});
+
+export {
+  registerUser,
+  loginUser,
+  logoutUser,
+  refreshAccessAndRefreshToken,
+  getCurrentUser,
+};
