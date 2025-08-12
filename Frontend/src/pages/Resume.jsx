@@ -160,7 +160,7 @@ const pdfStyles = StyleSheet.create({
     paddingVertical: 4,
     marginRight: 6,
     marginBottom: 6,
-    color: "#4B7280",
+    color: "#4B5563",
   },
   projectItem: {
     marginBottom: 15,
@@ -168,7 +168,7 @@ const pdfStyles = StyleSheet.create({
   projectHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
-    marginBottom: 8, // Increased margin to ensure space for links below dates
+    marginBottom: 2,
   },
   projectTitle: {
     fontSize: 12,
@@ -184,21 +184,11 @@ const pdfStyles = StyleSheet.create({
     color: "#1F2937",
     marginBottom: 2,
   },
-  projectLinksContainer: {
-    marginTop: 4, // Adds space below the dates for links
-    flexDirection: "row",
-    flexWrap: "wrap",
-  },
-  projectLinkLabel: {
+  projectLink: {
     fontSize: 10,
-    fontWeight: "bold",
     color: "#1F2937",
-    marginRight: 4,
-  },
-  linkText: {
-    fontSize: 10,
-    color: "#1E40AF", // Blue color for links
-    textDecoration: "underline",
+    marginBottom: 2,
+    fontWeight: "bold",
   },
   languageItem: {
     fontSize: 10,
