@@ -9,7 +9,7 @@ import InterviewSection from "./pages/InterviewSection";
 import InterviewResult from "./pages/InterviewResult";
 import Leetcode from "./pages/Leetcode";
 import Github from "./pages/Github";
-import Resume from "./pages/resume";
+import Resume from "./pages/Resume";
 
 function App() {
   return (
