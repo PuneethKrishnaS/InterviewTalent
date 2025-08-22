@@ -1,20 +1,29 @@
 import express from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
-
-//routes import
+import { errorHandler } from "./middlewares/errorHandler.middleware.js";
 import userRouter from "./routes/user.routes.js";
 
 const app = express();
 
-//epxress config
-app.use(cors({ origin: process.env.CORS_ORIGIN, credentials: true }));
+// ✅ Dynamic CORS setup
+const allowedOrigins = "http://localhost:5173";
+
+app.use(
+  cors({
+    origin: allowedOrigins,
+    credentials: true,
+  })
+);
+
 app.use(express.json({ limit: "100kb" }));
 app.use(express.urlencoded({ extended: true, limit: "100kb" }));
-app.use(cookieParser({ secret: process.env.COOKIE_PARSER }));
+app.use(cookieParser(process.env.COOKIE_PARSER));
 
-//route decleration
+// Routes
+app.use("/api/v1/users/auth", userRouter);
 
-app.use("/users", userRouter);
+// Error handler
+app.use(errorHandler);
 
 export { app };

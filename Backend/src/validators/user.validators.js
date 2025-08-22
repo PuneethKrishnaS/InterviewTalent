@@ -5,10 +5,15 @@ const symbolRegex = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/;
 const userSignupValidater = Joi.object({
   userName: Joi.object({
     first: Joi.string().min(3).max(50).trim().required().label("First name"),
-    last: Joi.string().max(50).trim().optional().label("Last name"),
-  })
-    .required()
-    .label("User name"),
+    last: Joi.string()
+      .max(50)
+      .trim()
+      .allow("")
+      .optional()
+      .empty("")
+      .default(null)
+      .label("Last name"),
+  }).label("User name"),
 
   email: Joi.string()
     .trim()

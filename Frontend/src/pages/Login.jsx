@@ -1,10 +1,13 @@
 import Logo from "../assets/Logo";
-import { Chrome, Cookie, Eye, EyeOff, Github } from "lucide-react";
+import { Chrome, Eye, EyeOff, Github } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader } from "../components/ui/card";
 import { Button } from "../components/ui/button";
-import { useState } from "react";
+import { useContext, useState } from "react";
+import api from "../utils/axios";
+import { toast } from "sonner";
+import { AuthContext } from "../components/context/AuthContext";
 
 export default function Login() {
   const [input, setInput] = useState({
@@ -16,6 +19,8 @@ export default function Login() {
     password: "",
   });
   const [showPassword, setShowPassword] = useState(false);
+
+  const { login } = useContext(AuthContext);
 
   const handleChange = (e) => {
     const { value, name } = e.target;
@@ -46,11 +51,10 @@ export default function Login() {
     if (!password.trim()) {
       newError.password = "Password can not be empty";
     }
-
     return newError;
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
     const validationErrors = validateForm(input);
@@ -60,10 +64,9 @@ export default function Login() {
       (msg) => msg.trim() !== ""
     );
 
-    if (!hasErrors) {
-      console.log("Signup successfully");
-      // Call API or redirect
-    }
+    if (hasErrors) return;
+
+    login(input.email, input.password);
   };
 
   return (

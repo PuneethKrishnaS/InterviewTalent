@@ -30,7 +30,7 @@ const refreshAccessAndRefreshToken = asyncHandler(async (req, res) => {
   try {
     const decodedInfo = jwt.verify(
       incommingRefreshToken,
-      process.env.ACCESS_TOKEN_SECRET
+      process.env.REFRESH_TOKEN_SECRET
     );
 
     const user = await User.findById(decodedInfo._id).select(
@@ -92,6 +92,8 @@ const registerUser = asyncHandler(async (req, res) => {
       refreshToken: undefined,
     });
 
+    console.log("user", user);
+
     //Check user created or not
     const UserCreated = await User.findById(user._id).select(
       "-password -refreshToken"
@@ -102,12 +104,16 @@ const registerUser = asyncHandler(async (req, res) => {
       throw new appError(500, "User creation failed");
     }
 
+    console.log("done!");
+
     //send response to user client
     res
       .status(201)
       .json(new appResponse(201, { UserCreated }, "User created sucessfully"));
   } catch (error) {
-    throw new appError(400, `Something went worng error -- ${error}`);
+    console.log("error is there ");
+
+    throw new appError(400, `${error}`);
   }
 });
 
@@ -140,8 +146,18 @@ const loginUser = asyncHandler(async (req, res) => {
 
   return res
     .status(200)
-    .cookie("accessToken", accessToken, { httpOnly: true, secure: true })
-    .cookie("refreshToken", refreshToken, { httpOnly: true, secure: true })
+    .cookie("accessToken", accessToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: process.env.NODE_ENV === "production" ? "none" : "strict",
+      maxAge: 24 * 60 * 60 * 1000,
+    })
+    .cookie("refreshToken", refreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: process.env.NODE_ENV === "production" ? "none" : "strict",
+      maxAge: 30 * 24 * 60 * 60 * 1000,
+    })
     .json(
       new appResponse(
         200,

@@ -2,8 +2,8 @@ class appError extends Error {
   constructor(
     statusCode,
     message = "Something went wrong",
-    stack,
-    errors = []
+    errors = [],
+    stack
   ) {
     super(message);
     this.message = message;

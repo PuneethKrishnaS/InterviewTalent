@@ -1,10 +1,21 @@
 import Logo from "../assets/Logo";
-import { Chrome, Cookie, Eye, EyeOff, Github } from "lucide-react";
+import {
+  CheckCircle2Icon,
+  Chrome,
+  Cookie,
+  Eye,
+  EyeOff,
+  Github,
+} from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Link } from "react-router-dom";
+import { Link, Navigate, useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader } from "../components/ui/card";
 import { Button } from "../components/ui/button";
-import { useState } from "react";
+import { useContext, useState } from "react";
+import api from "../utils/axios";
+import { Alert, AlertDescription, AlertTitle } from "../components/ui/alert";
+import { toast, Toaster } from "sonner";
+import { AuthContext } from "../components/context/AuthContext";
 
 export default function Signup() {
   const [input, setInput] = useState({
@@ -21,7 +32,10 @@ export default function Signup() {
     password: "",
     confirmpassword: "",
   });
+
   const [showPassword, setShowPassword] = useState(false);
+
+  const { signup } = useContext(AuthContext);
 
   const handleChange = (e) => {
     const { value, name } = e.target;
@@ -71,7 +85,7 @@ export default function Signup() {
     return newError;
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
     const validationErrors = validateForm(input);
@@ -82,10 +96,16 @@ export default function Signup() {
       (msg) => msg.trim() !== ""
     );
 
-    if (!hasErrors) {
-      console.log("Signup successfully");
-      // Call API or redirect
-    }
+    if (hasErrors) return;
+
+    signup({
+      userName: {
+        first: input.firstname,
+        last: input.lastname,
+      },
+      email: input.email,
+      password: input.password,
+    });
   };
 
   return (
@@ -161,7 +181,6 @@ export default function Signup() {
                     onChange={handleChange}
                     name="email"
                     value={input.email}
-                    
                   />
                   <span className="text-destructive  text-sm">
                     {error.email}
