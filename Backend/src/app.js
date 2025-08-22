@@ -7,7 +7,10 @@ import userRouter from "./routes/user.routes.js";
 const app = express();
 
 // ✅ Dynamic CORS setup
-const allowedOrigins = "http://localhost:5173";
+const allowedOrigins =
+  process.env.NODE_ENV === "development"
+    ? "http://localhost:5173/"
+    : "https://interviewtalentbackend-a83tlrh6i.vercel.app/";
 
 app.use(
   cors({
