@@ -6,7 +6,7 @@ const URL =
     : "http://localhost:8000/";
 
 const api = axios.create({
-  baseURL: URL,
+  baseURL: "http://localhost:8000/",
   withCredentials: true,
 });
 

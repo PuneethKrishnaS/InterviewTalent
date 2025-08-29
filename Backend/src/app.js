@@ -8,10 +8,7 @@ import interviewRouter from "./routes/interview.routes.js";
 const app = express();
 
 // ✅ Dynamic CORS setup
-const allowedOrigins =
-  process.env.NODE_ENV === "production"
-    ? "https://interview-talent-5abh.vercel.app"
-    : "http://localhost:5173";
+const allowedOrigins = "http://localhost:5173";
 
 app.use(
   cors({
