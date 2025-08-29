@@ -6,7 +6,7 @@ import { useNavigate } from "react-router-dom";
 export const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
-  const [loading, setLoading] = useState(true); 
+  const [loading, setLoading] = useState(true);
   const [user, setUser] = useState(null);
   const [checkingAuth, setCheckingAuth] = useState(true);
   const [authenticated, setAuthenticated] = useState(false);
@@ -28,7 +28,6 @@ export const AuthProvider = ({ children }) => {
       navigate("/dashboard");
     } catch (error) {
       toast.error(error.message);
-      console.log(error);
       setError(error);
     }
   };
@@ -67,7 +66,8 @@ export const AuthProvider = ({ children }) => {
       setCheckingAuth(false);
       setLoading(false);
     } catch (error) {
-      toast.error(error.message);
+      setUser(null);
+      setAuthenticated(false);
     }
   };
 

@@ -4,6 +4,7 @@ import {
   useNavigate,
   Navigate,
   replace,
+  Outlet,
 } from "react-router-dom";
 import { ThemeProvider } from "./components/context/theme-provider";
 import Index from "./pages/Index";
@@ -19,20 +20,23 @@ import Resume from "./pages/Resume";
 import { AuthContext } from "./components/context/AuthContext";
 import { useContext } from "react";
 import { useEffect } from "react";
+import NotFound from "./pages/NotFound";
+
 
 function App() {
   const { getUser, loading, user, checkingAuth, authenticated } =
     useContext(AuthContext);
+
   useEffect(() => {
     getUser();
   }, []);
 
   const ProtectedRoute = ({ children }) => {
-    if (loading) {
+    if (loading && checkingAuth) {
       return <div>loading</div>;
     }
 
-    if (!user) {
+    if (!user && !authenticated) {
       return <Navigate to="/login" replace />;
     }
 
@@ -40,19 +44,15 @@ function App() {
   };
 
   const RedirectRoute = ({ children }) => {
-    if (loading) {
-      return <div>Loading</div>;
+    if (!authenticated) {
+      return children;
     }
 
-    if (user) {
-      return <Navigate to="/dashboard" replace />;
-    }
-
-    return children;
+    return <Navigate to="/dashboard" replace />;
   };
 
   return (
-    <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
+    <ThemeProvider defaultTheme="light" storageKey="vite-ui-theme">
       <Routes>
         <Route
           path="/"
@@ -95,7 +95,7 @@ function App() {
           }
         />
         <Route
-          path="/interview-section"
+          path="/interview/section"
           element={
             <ProtectedRoute>
               <InterviewSection />
@@ -103,13 +103,14 @@ function App() {
           }
         />
         <Route
-          path="/interview-results"
+          path="/interview/results"
           element={
             <ProtectedRoute>
               <InterviewResult />
             </ProtectedRoute>
           }
         />
+
         <Route
           path="/leetcode-profile"
           element={
@@ -134,6 +135,8 @@ function App() {
             </ProtectedRoute>
           }
         />
+
+        <Route path="*" element={<NotFound />} />
       </Routes>
     </ThemeProvider>
   );

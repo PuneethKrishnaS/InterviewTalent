@@ -92,8 +92,6 @@ const registerUser = asyncHandler(async (req, res) => {
       refreshToken: undefined,
     });
 
-    console.log("user", user);
-
     //Check user created or not
     const UserCreated = await User.findById(user._id).select(
       "-password -refreshToken"
@@ -103,16 +101,11 @@ const registerUser = asyncHandler(async (req, res) => {
     if (!UserCreated) {
       throw new appError(500, "User creation failed");
     }
-
-    console.log("done!");
-
     //send response to user client
     res
       .status(201)
       .json(new appResponse(201, { UserCreated }, "User created sucessfully"));
   } catch (error) {
-    console.log("error is there ");
-
     throw new appError(400, `${error}`);
   }
 });

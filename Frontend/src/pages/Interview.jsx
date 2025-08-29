@@ -17,8 +17,10 @@ import {
   CardHeader,
   CardTitle,
 } from "../components/ui/card";
+import { Switch } from "../components/ui/switch";
+
 import { Badge } from "../components/ui/badge";
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useContext } from "react";
 import {
   Select,
   SelectContent,
@@ -27,6 +29,8 @@ import {
   SelectValue,
 } from "../components/ui/select";
 
+import { interviewStore } from "../components/store/InterviewStore";
+
 export default function Interview() {
   const navigate = useNavigate();
   const [selectedInterviewIndex, setSelectedInterviewIndex] = useState(null);
@@ -34,9 +38,11 @@ export default function Interview() {
   const [interviewDetails, setInterviewDetails] = useState({
     InterviewType: "Not selected",
     JobRole: "Not selected",
-    deficultyLevel: "Not selected",
+    DifficultyLevel: "Not selected",
     duration: "--:--",
   });
+
+  const { getQuestions, loading } = interviewStore();
 
   const interviews = [
     {
@@ -135,7 +141,8 @@ export default function Interview() {
       jobrole: "Systems Engineer",
     },
   ];
-  const deficultyLevel = [
+
+  const DifficultyLevel = [
     { name: "Beginner", varient: "outline" },
     { name: "Intermediate", varient: "outline" },
     { name: "Advanced", varient: "outline" },
@@ -152,7 +159,6 @@ export default function Interview() {
   const [selectedDeviceId, setSelectedDeviceId] = useState(null);
   const videoRef = useRef(null);
 
-  // Get camera devices
   useEffect(() => {
     const fetchDevices = async () => {
       try {
@@ -248,7 +254,6 @@ export default function Interview() {
                             InterviewType: interview.cardName,
                             duration: interview.badge.time,
                           }));
-                          console.log(interviewDetails);
                         }}
                         className={`cursor-pointer ${
                           selectedInterviewIndex === index
@@ -336,7 +341,7 @@ export default function Interview() {
                       Choose the difficulty that matches your experience
                     </p>
                     <div className="flex flex-wrap gap-2">
-                      {deficultyLevel.map((button, index) => (
+                      {DifficultyLevel.map((button, index) => (
                         <Button
                           key={index}
                           variant={
@@ -346,7 +351,10 @@ export default function Interview() {
                           }
                           onClick={() => {
                             setSelectedDifficultIndex(index);
-                            setInterviewDetails((prev=>({...prev,deficultyLevel:button.name})))
+                            setInterviewDetails((prev) => ({
+                              ...prev,
+                              DifficultyLevel: button.name,
+                            }));
                           }}
                         >
                           {button.name}
@@ -354,6 +362,39 @@ export default function Interview() {
                       ))}
                     </div>
                   </div>
+                </div>
+              </div>
+              <div className="flex item-center gap-10 wrap-content wrap-normal ">
+                <div className="flex items-center space-x-2 mt-2 ">
+                  <Switch
+                    id="strict-mock-switch"
+                    checked={interviewDetails.isStrictMock}
+                    onCheckedChange={(checked) =>
+                      setInterviewDetails((prev) => ({
+                        ...prev,
+                        isStrictMock: checked,
+                      }))
+                    }
+                  />
+                  <label htmlFor="strict-mock-switch">
+                    Strict Mock (No Hints)
+                  </label>
+                </div>
+
+                <div className="flex items-center space-x-2 mt-2">
+                  <Switch
+                    id="resume-analysis-switch"
+                    checked={interviewDetails.isResumeAnalysis}
+                    onCheckedChange={(checked) =>
+                      setInterviewDetails((prev) => ({
+                        ...prev,
+                        isResumeAnalysis: checked,
+                      }))
+                    }
+                  />
+                  <label htmlFor="resume-analysis-switch">
+                    Analyze from Resume
+                  </label>
                 </div>
               </div>
             </div>
@@ -393,33 +434,47 @@ export default function Interview() {
 
               {/* Interview Details, Start Button, and Tips */}
               <div className="border border-border rounded-xl p-4 flex flex-col gap-4">
-                <h2 className="font-semibold text-lg mb-2">Interview Details</h2>
+                <h2 className="font-semibold text-lg mb-2">
+                  Interview Details
+                </h2>
                 <ul className="text-sm text-muted-foreground mb-2">
                   <li>
                     <span className="font-medium text-foreground">Type:</span>{" "}
                     {interviewDetails.InterviewType}
                   </li>
                   <li>
-                    <span className="font-medium text-foreground">Job Role:</span>{" "}
+                    <span className="font-medium text-foreground">
+                      Job Role:
+                    </span>{" "}
                     {interviewDetails.JobRole}
                   </li>
                   <li>
-                    <span className="font-medium text-foreground">Difficulty:</span>{" "}
-                    {interviewDetails.deficultyLevel}
+                    <span className="font-medium text-foreground">
+                      Difficulty:
+                    </span>{" "}
+                    {interviewDetails.DifficultyLevel}
                   </li>
                   <li>
-                    <span className="font-medium text-foreground">Duration:</span>{" "}
+                    <span className="font-medium text-foreground">
+                      Duration:
+                    </span>{" "}
                     {interviewDetails.duration}
                   </li>
                 </ul>
                 <Button
-                  className="w-full"
+                  className="w-full "
                   disabled={
                     interviewDetails.InterviewType === "Not selected" ||
                     interviewDetails.JobRole === "Not selected" ||
-                    interviewDetails.deficultyLevel === "Not selected"
+                    interviewDetails.DifficultyLevel === "Not selected" ||
+                    loading === true
                   }
-                  onClick={() => navigate("/interview-section", { state: interviewDetails })}
+                  onClick={async () => {
+                    await getQuestions(interviewDetails);
+                    if (!loading) {
+                      navigate("/interview/section");
+                    }
+                  }}
                 >
                   Start Interview
                 </Button>
@@ -428,7 +483,9 @@ export default function Interview() {
                   <ul className="list-disc list-inside text-xs text-muted-foreground space-y-1">
                     <li>Find a quiet, well-lit place for your interview.</li>
                     <li>Test your camera and microphone before starting.</li>
-                    <li>Read each question carefully and think before answering.</li>
+                    <li>
+                      Read each question carefully and think before answering.
+                    </li>
                     <li>Be confident and speak clearly.</li>
                     <li>Keep your answers concise and relevant.</li>
                   </ul>

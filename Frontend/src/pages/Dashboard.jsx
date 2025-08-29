@@ -21,19 +21,18 @@ import {
   Activity,
 } from "lucide-react";
 
-import { Link, useNavigate } from "react-router-dom";
-
+import { useNavigate } from "react-router-dom";
+import { useContext } from "react";
+import { AuthContext } from "../components/context/AuthContext";
 
 export default function Dashboard() {
+  const { user, loading } = useContext(AuthContext);
   const navigate = useNavigate();
 
   const [stats] = useState({
-    interviewsTaken: 12,
-    resumeScore: 88,
-    discussionPoints: 45,
-    badgesEarned: 7,
-    streak: 5,
-    skillsImproved: 3,
+    interviewsTaken: user.performanceMetrics.interviewsCompleted,
+    resumeScore: user.performanceMetrics.resumeScore,
+    skillsImproved: user.performanceMetrics.skillsImproved,
   });
 
   const [performanceMetrics] = useState([
@@ -90,7 +89,6 @@ export default function Dashboard() {
       date: "2 days ago",
       score: 78,
     },
-
   ]);
 
   const explorePracticeActions = [
@@ -134,14 +132,16 @@ export default function Dashboard() {
             <div className="flex-1">
               <h1 className="text-4xl lg:text-5xl font-bold text-foreground mb-3 leading-tight">
                 Welcome back,{" "}
-                <span className="text-blue-700 dark:text-blue-400">John.</span>
+                <span className="text-blue-700 dark:text-blue-400">
+                  {user.userName.first}
+                </span>
               </h1>
               <p className="text-lg text-muted-foreground max-w-2xl">
                 Your personalized dashboard to career growth and excellence.
               </p>
             </div>
             {/* Developer Integrations - Not in card, simple list */}
-            <div >
+            <div>
               {" "}
               {/* Adjust width as needed */}
               <h2 className="text-xl font-semibold text-foreground mb-4 flex items-center gap-2">
@@ -185,7 +185,6 @@ export default function Dashboard() {
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             {" "}
- 
             <div className="lg:col-span-2 space-y-10">
               {/* Your Performance Metrics */}
               <section>
@@ -199,7 +198,7 @@ export default function Dashboard() {
                       key={metric.id}
                       className="hover:shadow-lg transition-shadow duration-300 border border-border"
                     >
-                      <CardContent >
+                      <CardContent>
                         <div className="flex items-center justify-between mb-4">
                           <div>
                             <p className="text-sm font-medium text-muted-foreground mb-1">
@@ -258,9 +257,7 @@ export default function Dashboard() {
                         <p className="text-sm text-muted-foreground leading-snug">
                           {action.description}
                         </p>
-                        <div 
-                          className="mt-4 text-primary flex  text-center items-center group-hover:underline "
-                        >
+                        <div className="mt-4 text-primary flex  text-center items-center group-hover:underline ">
                           Launch <ChevronRight className="ml-1 w-3 h-3" />
                         </div>
                       </CardContent>
@@ -297,7 +294,7 @@ export default function Dashboard() {
                 </Card>
               </section>
 
-                            <section>
+              <section>
                 <Card className="shadow-sm border border-border">
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2 text-foreground">

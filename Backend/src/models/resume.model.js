@@ -67,7 +67,6 @@ const resumeScheme = new mongoose.Schema(
       technical: [String],
       soft: [String],
     },
-    
   },
   { timestamps: true }
 );
