@@ -27,8 +27,8 @@ export const AuthProvider = ({ children }) => {
       toast.success("User logged in successfully");
       navigate("/dashboard");
     } catch (error) {
-      toast.error(error.message);
-      setError(error);
+      toast.error(error.response?.data?.message || "Login failed");
+      setError(error.response?.data?.message || error.message);
     }
   };
 
@@ -40,7 +40,8 @@ export const AuthProvider = ({ children }) => {
       navigate("/login");
       toast.success("User registerd Sucessfully");
     } catch (error) {
-      console.error(error);
+      toast.error(error.response?.data?.message || "Refistration failed");
+      setError(error.response?.data?.message || error.message);
     }
   };
 

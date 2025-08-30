@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import MainNavbar from "../components/global/MainNavbar";
 import { Button } from "../components/ui/button";
@@ -10,11 +10,11 @@ import {
   ArrowUp,
   ArrowDown,
   Trash2,
+  Save,
 } from "lucide-react";
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
 } from "../components/ui/card";
@@ -28,9 +28,11 @@ import {
   Text,
   View,
   StyleSheet,
+  Link,
+  pdf, // Added PDF import
 } from "@react-pdf/renderer";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { v4 as uuidv4 } from "uuid";
+import { useResumeStore } from "@/components/store/resumeStore";
 
 // Error Boundary Component to catch PDF rendering errors
 class ErrorBoundary extends React.Component {
@@ -77,58 +79,71 @@ const formatDate = (dateString) => {
 const pdfStyles = StyleSheet.create({
   page: {
     flexDirection: "column",
-    backgroundColor: "#F9FAFB",
-    padding: 40,
+    backgroundColor: "#FFFFFF",
+    padding: 30,
     fontFamily: "Helvetica",
-    color: "#333333",
+    color: "#212121",
   },
   section: {
-    marginBottom: 20,
+    marginBottom: 15,
   },
   heading: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: "bold",
-    marginBottom: 8,
-    color: "#1F2937",
-    borderBottomWidth: 1.5,
-    borderBottomColor: "#E5E7EB",
-    paddingBottom: 4,
+    marginBottom: 6,
+    color: "#1565C0",
+    borderBottomWidth: 2,
+    borderBottomColor: "#BBDEFB",
+    paddingBottom: 3,
     textTransform: "uppercase",
+    letterSpacing: 1,
   },
   subheading: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: "bold",
-    marginBottom: 4,
-    color: "#4B5563",
+    marginBottom: 3,
+    color: "#424242",
   },
   text: {
     fontSize: 10,
-    marginBottom: 4,
-    lineHeight: 1.5,
+    marginBottom: 3,
+    lineHeight: 1.4,
   },
   listItem: {
     fontSize: 10,
     marginBottom: 2,
-    marginLeft: 10,
-    lineHeight: 1.5,
+    marginLeft: 12,
+    lineHeight: 1.4,
+    flexDirection: "row",
+    alignItems: "flex-start",
+  },
+  bullet: {
+    marginRight: 4,
+    fontSize: 10,
   },
   header: {
-    marginBottom: 25,
-    textAlign: "center",
+    marginBottom: 5,
+    textAlign: "left",
+    paddingBottom: 10,
   },
   name: {
-    fontSize: 28,
+    fontSize: 26,
     fontWeight: "bold",
     marginBottom: 4,
-    color: "#111827",
+    color: "#0D47A1",
   },
   contact: {
-    fontSize: 10,
-    color: "#6B7280",
-    lineHeight: 1.5,
+    fontSize: 9,
+    color: "#757575",
+    lineHeight: 1.4,
+    flexDirection: "row",
+    flexWrap: "wrap",
+  },
+  contactItem: {
+    marginRight: 12,
   },
   experienceItem: {
-    marginBottom: 15,
+    marginBottom: 12,
   },
   experienceHeader: {
     flexDirection: "row",
@@ -138,32 +153,29 @@ const pdfStyles = StyleSheet.create({
   experienceTitle: {
     fontSize: 12,
     fontWeight: "bold",
+    color: "#333333",
   },
   experienceCompany: {
     fontSize: 10,
-    fontStyle: "italic",
-    color: "#4B5563",
+    color: "#616161",
   },
   experienceDates: {
     fontSize: 10,
-    color: "#6B7280",
+    color: "#9E9E9E",
   },
   skillsContainer: {
     flexDirection: "row",
     flexWrap: "wrap",
-    marginTop: 5,
+    marginTop: 4,
   },
   skillBadge: {
     fontSize: 9,
-    borderRadius: 8,
-    paddingHorizontal: 8,
+    borderRadius: 12,
+    paddingHorizontal: 10,
     paddingVertical: 4,
-    marginRight: 6,
-    marginBottom: 6,
-    color: "#4B5563",
   },
   projectItem: {
-    marginBottom: 15,
+    marginBottom: 12,
   },
   projectHeader: {
     flexDirection: "row",
@@ -173,39 +185,55 @@ const pdfStyles = StyleSheet.create({
   projectTitle: {
     fontSize: 12,
     fontWeight: "bold",
+    color: "#333333",
   },
   projectDates: {
     fontSize: 10,
-    color: "#6B7280",
+    color: "#9E9E9E",
   },
   projectTech: {
     fontSize: 10,
-    fontWeight: "bold",
-    color: "#1F2937",
+    color: "#424242",
     marginBottom: 2,
   },
+  projectLinks: {
+    flexDirection: "row",
+    marginTop: 2,
+  },
   projectLink: {
-    fontSize: 10,
-    color: "#1F2937",
-    marginBottom: 2,
-    fontWeight: "bold",
+    fontSize: 9,
+    color: "#1E88E5",
+    marginRight: 12,
+    textDecoration: "underline",
   },
   languageItem: {
     fontSize: 10,
     marginBottom: 2,
-    marginLeft: 10,
-    lineHeight: 1.5,
+    marginLeft: 12,
+    lineHeight: 1.4,
   },
   achievementItem: {
     fontSize: 10,
+    marginBottom: 4,
+    marginLeft: 12,
+    lineHeight: 1.4,
+    flexDirection: "column",
+  },
+  achievementDescription: {
     marginBottom: 2,
-    marginLeft: 10,
-    lineHeight: 1.5,
+  },
+  achievementLink: {
+    fontSize: 9,
+    color: "#1E88E5",
+    textDecoration: "underline",
   },
   educationMarks: {
     fontSize: 10,
-    fontStyle: "italic",
-    color: "#6B7280",
+    color: "#757575",
+  },
+  linkText: {
+    color: "#1E88E5",
+    textDecoration: "underline",
   },
 });
 
@@ -216,20 +244,26 @@ const MyResumeDocument = ({ data }) => (
       {/* Header */}
       <View style={pdfStyles.header}>
         <Text style={pdfStyles.name}>{data.personal.name}</Text>
-        <Text style={pdfStyles.contact}>
-          {data.personal.email} | {data.personal.phone} |{" "}
+        <View style={pdfStyles.contact}>
+          <Text style={pdfStyles.contactItem}>{data.personal.email}</Text>
+          <Text style={pdfStyles.contactItem}>{data.personal.phone}</Text>
           {data.personal.linkedin && (
-            <Text src={`https://${data.personal.linkedin}`}>
+            <Link
+              src={`https://${data.personal.linkedin}`}
+              style={pdfStyles.contactItem}
+            >
               <Text style={pdfStyles.linkText}>LinkedIn</Text>
-            </Text>
+            </Link>
           )}
-          {data.personal.linkedin && data.personal.github && " | "}
           {data.personal.github && (
-            <Text src={`https://${data.personal.github}`}>
+            <Link
+              src={`https://${data.personal.github}`}
+              style={pdfStyles.contactItem}
+            >
               <Text style={pdfStyles.linkText}>GitHub</Text>
-            </Text>
+            </Link>
           )}
-        </Text>
+        </View>
       </View>
       {/* Summary */}
       {data.summary && (
@@ -255,9 +289,10 @@ const MyResumeDocument = ({ data }) => (
               </Text>
               {exp.description &&
                 exp.description.split("\n").map((line, i) => (
-                  <Text key={i} style={pdfStyles.listItem}>
-                    {line}
-                  </Text>
+                  <View key={i} style={pdfStyles.listItem}>
+                    <Text style={pdfStyles.bullet}>•</Text>
+                    <Text>{line.replace(/^•\s*/, "")}</Text>
+                  </View>
                 ))}
             </View>
           ))}
@@ -299,15 +334,34 @@ const MyResumeDocument = ({ data }) => (
                 </Text>
               </View>
               <Text style={pdfStyles.projectTech}>
-                Technologies: {project.technologies}
+                <Text style={{ fontWeight: "bold" }}>Technologies:</Text>{" "}
+                {project.technologies}
               </Text>
 
               {project.description &&
                 project.description.split("\n").map((line, i) => (
-                  <Text key={i} style={pdfStyles.listItem}>
-                    {line}
-                  </Text>
+                  <View key={i} style={pdfStyles.listItem}>
+                    <Text style={pdfStyles.bullet}>•</Text>
+                    <Text>{line.replace(/^•\s*/, "")}</Text>
+                  </View>
                 ))}
+              {(project.liveLink || project.githubLink) && (
+                <View style={pdfStyles.projectLinks}>
+                  {project.liveLink && (
+                    <Link src={project.liveLink} style={pdfStyles.projectLink}>
+                      <Text>Live Demo</Text>
+                    </Link>
+                  )}
+                  {project.githubLink && (
+                    <Link
+                      src={project.githubLink}
+                      style={pdfStyles.projectLink}
+                    >
+                      <Text>GitHub</Text>
+                    </Link>
+                  )}
+                </View>
+              )}
             </View>
           ))}
         </View>
@@ -317,9 +371,16 @@ const MyResumeDocument = ({ data }) => (
         <View style={pdfStyles.section}>
           <Text style={pdfStyles.heading}>Achievements</Text>
           {data.achievements.map((ach, index) => (
-            <Text key={ach.id || index} style={pdfStyles.achievementItem}>
-              • {ach.description}
-            </Text>
+            <View key={ach.id || index} style={pdfStyles.achievementItem}>
+              <Text style={pdfStyles.achievementDescription}>
+                • {ach.description}
+              </Text>
+              {ach.documentLink && (
+                <Link src={ach.documentLink} style={pdfStyles.achievementLink}>
+                  <Text>View Document</Text>
+                </Link>
+              )}
+            </View>
           ))}
         </View>
       )}
@@ -331,7 +392,7 @@ const MyResumeDocument = ({ data }) => (
           <View style={pdfStyles.skillsContainer}>
             {data.skills.technical.map((skill, index) => (
               <Text key={index} style={pdfStyles.skillBadge}>
-                {skill}
+                {skill},
               </Text>
             ))}
           </View>
@@ -343,7 +404,7 @@ const MyResumeDocument = ({ data }) => (
               <View style={pdfStyles.skillsContainer}>
                 {data.skills.soft.map((skill, index) => (
                   <Text key={index} style={pdfStyles.skillBadge}>
-                    {skill}
+                    {skill},
                   </Text>
                 ))}
               </View>
@@ -368,328 +429,32 @@ const MyResumeDocument = ({ data }) => (
 
 export default function Resume() {
   const navigate = useNavigate();
-  const [resumeData, setResumeData] = useState({
-    personal: {
-      name: "John Doe",
-      email: "john.doe@example.com",
-      phone: "123-456-7890",
-      linkedin: "linkedin.com/in/johndoe",
-      github: "github.com/johndoe",
-    },
-    summary:
-      "Highly motivated software engineer with 5+ years of experience in full-stack development. Proficient in React, Node.js, and cloud platforms. Seeking to leverage technical skills and problem-solving abilities to contribute to innovative projects.",
-    experience: [
-      {
-        id: uuidv4(),
-        title: "Senior Software Engineer",
-        company: "Tech Solutions Inc.",
-        location: "San Francisco, CA",
-        startDate: "Jan 2022",
-        endDate: "Present",
-        description:
-          " Led development of scalable web applications using React and Node.js.\n Implemented RESTful APIs and integrated with various third-party services.\n Mentored junior developers and conducted code reviews.",
-      },
-      {
-        id: uuidv4(),
-        title: "Software Developer",
-        company: "Innovate Corp.",
-        location: "New York, NY",
-        startDate: "Jul 2019",
-        endDate: "Dec 2021",
-        description:
-          " Developed and maintained front-end features for e-commerce platform.\n Collaborated with UX/UI designers to translate wireframes into interactive components.\n Optimized application performance, reducing load times by 20%.",
-      },
-    ],
-    education: [
-      {
-        id: uuidv4(),
-        degree: "M.S. in Computer Science",
-        institution: "University of Tech",
-        location: "City, State",
-        startDate: "Sep 2018",
-        endDate: "May 2020",
-        marks: "3.8/4.0 GPA",
-      },
-      {
-        id: uuidv4(),
-        degree: "B.S. in Software Engineering",
-        institution: "State University",
-        location: "City, State",
-        startDate: "Sep 2015",
-        endDate: "May 2019",
-        marks: "3.8/4.0 GPA",
-      },
-    ],
-    projects: [
-      {
-        id: uuidv4(),
-        name: "E-commerce Platform Redesign",
-        startDate: "Mar 2023",
-        endDate: "Jun 2023",
-        technologies: "React, Redux, Node.js, Express, MongoDB",
-        description:
-          " Revamped existing e-commerce site with a modern UI/UX.\n Integrated Stripe for payment processing, increasing conversion by 15%.\n Developed custom API endpoints for product management.",
-        liveLink: "https://example.com/ecommerce",
-        githubLink: "https://github.com/johndoe/ecommerce-redesign",
-      },
-      {
-        id: uuidv4(),
-        name: "Personal Portfolio Website",
-        startDate: "Jan 2024",
-        endDate: "Feb 2024",
-        technologies: "Next.js, Tailwind CSS, Vercel",
-        description:
-          " Designed and built a responsive personal portfolio to showcase projects and skills.\nImplemented SEO best practices for better search engine visibility.",
-        liveLink: "https://johndoe.com",
-        githubLink: "https://github.com/johndoe/portfolio",
-      },
-    ],
-    skills: {
-      technical: [
-        "JavaScript",
-        "React",
-        "Node.js",
-        "Python",
-        "SQL",
-        "AWS",
-        "Docker",
-        "Git",
-        "Tailwind CSS",
-      ],
-      soft: [
-        "Problem Solving",
-        "Teamwork",
-        "Communication",
-        "Leadership",
-        "Adaptability",
-      ],
-    },
-    languages: ["English (Fluent)", "Spanish (Conversational)"],
-    achievements: [
-      {
-        id: uuidv4(),
-        description:
-          "Won the 'Best Innovator' award at the 2023 Hackathon for a new mobile app.",
-      },
-      {
-        id: uuidv4(),
-        description:
-          "Published a research paper on machine learning in a peer-reviewed journal.",
-      },
-    ],
-  });
 
-  const [showPdf, setShowPdf] = useState(true);
+  // Destructure state and actions from the Zustand store
+  const {
+    resumeData,
+    showPdf,
+    handleChange,
+    addExperience,
+    removeExperience,
+    addEducation,
+    removeEducation,
+    addProject,
+    removeProject,
+    addAchievement,
+    removeAchievement,
+    moveItem,
+    handleFetchGithubProjects,
+    handleAIButtonClick,
+    handleKeyDown,
+    uploadToDataBase,
+    fetchFromDB,
+    loading,
+  } = useResumeStore();
 
-  const handleChange = (section, field, value, index = null) => {
-    setShowPdf(false);
-    setResumeData((prevData) => {
-      if (section === "languages") {
-        return {
-          ...prevData,
-          languages: value
-            .split(",")
-            .map((s) => s.trim())
-            .filter((s) => s !== ""),
-        };
-      } else if (index !== null) {
-        const updatedArray = [...prevData[section]];
-        updatedArray[index] = { ...updatedArray[index], [field]: value };
-        return { ...prevData, [section]: updatedArray };
-      } else if (section === "skills") {
-        return {
-          ...prevData,
-          skills: {
-            ...prevData.skills,
-            [field]: value
-              .split(",")
-              .map((s) => s.trim())
-              .filter((s) => s !== ""),
-          },
-        };
-      } else {
-        return {
-          ...prevData,
-          [section]: { ...prevData[section], [field]: value },
-        };
-      }
-    });
-    setTimeout(() => setShowPdf(true), 100);
-  };
-
-  const addExperience = () => {
-    setShowPdf(false);
-    setResumeData((prevData) => ({
-      ...prevData,
-      experience: [
-        ...prevData.experience,
-        {
-          id: uuidv4(),
-          title: "",
-          company: "",
-          location: "",
-          startDate: "",
-          endDate: "",
-          description: "",
-        },
-      ],
-    }));
-    setTimeout(() => setShowPdf(true), 100);
-  };
-
-  const removeExperience = (id) => {
-    setShowPdf(false);
-    setResumeData((prevData) => ({
-      ...prevData,
-      experience: prevData.experience.filter((exp) => exp.id !== id),
-    }));
-    setTimeout(() => setShowPdf(true), 100);
-  };
-
-  const addEducation = () => {
-    setShowPdf(false);
-    setResumeData((prevData) => ({
-      ...prevData,
-      education: [
-        ...prevData.education,
-        {
-          id: uuidv4(),
-          degree: "",
-          institution: "",
-          location: "",
-          startDate: "",
-          endDate: "",
-          marks: "",
-        },
-      ],
-    }));
-    setTimeout(() => setShowPdf(true), 100);
-  };
-
-  const removeEducation = (id) => {
-    setShowPdf(false);
-    setResumeData((prevData) => ({
-      ...prevData,
-      education: prevData.education.filter((edu) => edu.id !== id),
-    }));
-    setTimeout(() => setShowPdf(true), 100);
-  };
-
-  const addProject = () => {
-    setShowPdf(false);
-    setResumeData((prevData) => ({
-      ...prevData,
-      projects: [
-        ...prevData.projects,
-        {
-          id: uuidv4(),
-          name: "",
-          startDate: "",
-          endDate: "",
-          technologies: "",
-          description: "",
-          liveLink: "",
-          githubLink: "",
-        },
-      ],
-    }));
-    setTimeout(() => setShowPdf(true), 100);
-  };
-
-  const removeProject = (id) => {
-    setShowPdf(false);
-    setResumeData((prevData) => ({
-      ...prevData,
-      projects: prevData.projects.filter((project) => project.id !== id),
-    }));
-    setTimeout(() => setShowPdf(true), 100);
-  };
-
-  const addAchievement = () => {
-    setShowPdf(false);
-    setResumeData((prevData) => ({
-      ...prevData,
-      achievements: [
-        ...prevData.achievements,
-        { id: uuidv4(), description: "" },
-      ],
-    }));
-    setTimeout(() => setShowPdf(true), 100);
-  };
-
-  const removeAchievement = (id) => {
-    setShowPdf(false);
-    setResumeData((prevData) => ({
-      ...prevData,
-      achievements: prevData.achievements.filter((ach) => ach.id !== id),
-    }));
-    setTimeout(() => setShowPdf(true), 100);
-  };
-
-  const moveItem = (section, index, direction) => {
-    setShowPdf(false);
-    setResumeData((prevData) => {
-      const newArray = [...prevData[section]];
-      const [movedItem] = newArray.splice(index, 1);
-      const newIndex = direction === "up" ? index - 1 : index + 1;
-      newArray.splice(newIndex, 0, movedItem);
-      return {
-        ...prevData,
-        [section]: newArray,
-      };
-    });
-    setTimeout(() => setShowPdf(true), 100);
-  };
-
-  const handleFetchGithubProjects = async () => {
-    const username = prompt("Please enter your GitHub username:");
-    if (!username) return;
-
-    try {
-      setShowPdf(false);
-      const response = await fetch(
-        `https://api.github.com/users/${username}/repos`
-      );
-      if (!response.ok) {
-        throw new Error("User not found or an error occurred.");
-      }
-      const repos = await response.json();
-
-      const newProjects = repos.map((repo) => ({
-        id: uuidv4(),
-        name: repo.name,
-        startDate: new Date(repo.created_at).toLocaleDateString(),
-        endDate: new Date(repo.updated_at).toLocaleDateString(),
-        technologies: repo.language || "N/A",
-        description: repo.description || "No description provided.",
-        liveLink: "",
-        githubLink: repo.html_url,
-      }));
-
-      setResumeData((prevData) => ({
-        ...prevData,
-        projects: [...prevData.projects, ...newProjects],
-      }));
-
-      alert(`Successfully fetched ${repos.length} projects from GitHub!`);
-      setTimeout(() => setShowPdf(true), 100);
-    } catch (error) {
-      console.error("Error fetching projects from GitHub:", error);
-      alert(error.message);
-      setShowPdf(true);
-    }
-  };
-
-  const handleAIButtonClick = (sectionName) => {
-    console.log(`AI optimization requested for ${sectionName} section.`);
-    alert(
-      `AI optimization for ${sectionName} is not yet implemented. This feature would help make your content ATS-friendly.`
-    );
-  };
-
+  // The handleDownloadPdf function is moved here
   const handleDownloadPdf = async () => {
     try {
-      const { pdf } = await import("@react-pdf/renderer");
       const blob = await pdf(<MyResumeDocument data={resumeData} />).toBlob();
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
@@ -708,28 +473,15 @@ export default function Resume() {
     }
   };
 
-  const handleKeyDown = (e, section, field, index) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      const textarea = e.target;
-      const value = textarea.value;
-      const start = textarea.selectionStart;
-      const end = textarea.selectionEnd;
-
-      const newValue =
-        value.substring(0, start) + "\n• " + value.substring(end);
-      setShowPdf(false);
-      setResumeData((prevData) => {
-        const updatedArray = [...prevData[section]];
-        updatedArray[index] = { ...updatedArray[index], [field]: newValue };
-        return { ...prevData, [section]: updatedArray };
-      });
-      setTimeout(() => {
-        setShowPdf(true);
-        textarea.selectionStart = textarea.selectionEnd = start + 2;
-      }, 100);
-    }
+  const handleSavePdf = async () => {
+    console.log(resumeData);
+    await uploadToDataBase(resumeData);
   };
+
+  useEffect(() => {
+  fetchFromDB();
+}, []);
+
 
   return (
     <div className="bg-background min-h-screen text-foreground font-inter">
@@ -758,7 +510,7 @@ export default function Resume() {
 
           <section className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Left Column: Input Form with Tabs */}
-            <div className="lg:col-span-1 flex flex-col gap-6">
+            <div className="lg:col-span-1 flex flex-col gap-6 overflow-y-auto max-h-[calc(100vh-150px)]">
               <Tabs defaultValue="personal" className="w-full">
                 <TabsList className="grid w-full grid-cols-3 md:grid-cols-4 lg:grid-cols-6 h-auto">
                   <TabsTrigger value="personal">Personal</TabsTrigger>
@@ -866,10 +618,7 @@ export default function Resume() {
                       <Textarea
                         value={resumeData.summary}
                         onChange={(e) =>
-                          setResumeData((prev) => ({
-                            ...prev,
-                            summary: e.target.value,
-                          }))
+                          handleChange("summary", "summary", e.target.value)
                         }
                         rows={5}
                       />
@@ -1513,15 +1262,24 @@ export default function Resume() {
                                   index
                                 )
                               }
-                              onKeyDown={(e) =>
-                                handleKeyDown(
-                                  e,
+                              rows={2}
+                            />
+                          </div>
+                          <div>
+                            <Label htmlFor={`ach-link-${index}`}>
+                              Document Link (e.g., certificate URL)
+                            </Label>
+                            <Input
+                              id={`ach-link-${index}`}
+                              value={ach.documentLink}
+                              onChange={(e) =>
+                                handleChange(
                                   "achievements",
-                                  "description",
+                                  "documentLink",
+                                  e.target.value,
                                   index
                                 )
                               }
-                              rows={2}
                             />
                           </div>
                         </div>
@@ -1609,26 +1367,42 @@ export default function Resume() {
               <Card className="bg-card border border-border text-foreground h-full">
                 <CardHeader className="flex flex-row justify-between items-center">
                   <CardTitle className="text-lg">Resume Preview</CardTitle>
-                  <Button
-                    onClick={handleDownloadPdf}
-                    size="sm"
-                    className="bg-primary hover:bg-primary/80"
-                  >
-                    <Download className="h-4 w-4 mr-1" /> Download PDF
-                  </Button>
+                  <div className="flex gap-4 flex-wrap ">
+                    <Button
+                      onClick={handleDownloadPdf}
+                      size="sm"
+                      className="bg-primary hover:bg-primary/80"
+                    >
+                      <Download className="h-4 w-4 mr-1" /> Download PDF
+                    </Button>
+                    <Button
+                      onClick={handleSavePdf}
+                      size="sm"
+                      className="bg-primary hover:bg-primary/80"
+                    >
+                      <Save className="h-4 w-4 mr-1" /> Save PDF
+                    </Button>
+                  </div>
                 </CardHeader>
-                <CardContent className="h-[700px] flex items-center justify-center p-0 overflow-hidden">
-                  <ErrorBoundary>
-                    {showPdf ? (
-                      <PDFViewer width="100%" height="100%" showToolbar={false}>
-                        <MyResumeDocument data={resumeData} />
-                      </PDFViewer>
-                    ) : (
-                      <div className="text-muted-foreground">
-                        Updating preview...
-                      </div>
-                    )}
-                  </ErrorBoundary>
+                <CardContent className="h-[700px] p-0 overflow-hidden">
+                  <div className="h-full w-full overflow-hidden">
+                    <ErrorBoundary>
+                      {showPdf ? (
+                        <PDFViewer
+                          width="100%"
+                          height="100%"
+                          showToolbar={false}
+                          className="overflow-hidden"
+                        >
+                          <MyResumeDocument data={resumeData} />
+                        </PDFViewer>
+                      ) : (
+                        <div className="flex items-center justify-center h-full text-muted-foreground">
+                          Updating preview...
+                        </div>
+                      )}
+                    </ErrorBoundary>
+                  </div>
                 </CardContent>
               </Card>
             </div>

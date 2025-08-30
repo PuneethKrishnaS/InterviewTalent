@@ -2,7 +2,7 @@ import mongoose from "mongoose";
 
 const experienceSchema = mongoose.Schema({
   experience: {
-    jobTitle: String,
+    title: String,
     company: String,
     location: String,
     startDate: Date,
@@ -18,7 +18,7 @@ const experienceSchema = mongoose.Schema({
 const projectSchema = mongoose.Schema({
   project: {
     projectName: String,
-    Technologies: [String],
+    technologies: [String],
     startDate: Date,
     endDate: Date,
     isPresent: {
@@ -26,17 +26,22 @@ const projectSchema = mongoose.Schema({
       default: false,
     },
     description: String,
-    projectUrl: String,
-    liveUrl: String,
+    githubLink: String,
+    liveLink: String,
   },
 });
 
 const educationSchema = mongoose.Schema({
   degree: String,
-  university: String,
+  institution: String,
   location: String,
   startDate: Date,
   endDate: Date,
+});
+
+const achivementsSchema = mongoose.Schema({
+  description: String,
+  url: String,
 });
 
 const resumeScheme = new mongoose.Schema(
@@ -57,16 +62,19 @@ const resumeScheme = new mongoose.Schema(
     },
     summary: String,
 
-    experience: [experienceSchema],
+    experiences: [experienceSchema],
 
-    project: [projectSchema],
+    projects: [projectSchema],
 
-    education: [educationSchema],
+    educations: [educationSchema],
 
     skills: {
       technical: [String],
       soft: [String],
     },
+    achivements: [achivementsSchema],
+
+    languages: [String],
   },
   { timestamps: true }
 );

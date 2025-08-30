@@ -1,6 +1,5 @@
 import { create } from "zustand";
 import api from "../../utils/axios";
-import { Await } from "react-router-dom";
 
 export const interviewStore = create((set, get) => ({
   details: null,

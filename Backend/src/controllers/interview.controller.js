@@ -174,7 +174,7 @@ const interviewGetFeedback = asyncHandler(async (req, res) => {
     }
 
     // Save to DB
-    const {interview} = await storeInterviewData(feedbackData, req.user);
+    await storeInterviewData(feedbackData, req.user);
 
     res.status(201).json(new appResponse(201, groqFeedback, "AI data stored"));
   } catch (error) {
