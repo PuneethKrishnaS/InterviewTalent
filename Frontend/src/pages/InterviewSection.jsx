@@ -22,13 +22,19 @@ import SpeechRecognition, {
   useSpeechRecognition,
 } from "react-speech-recognition";
 import { interviewStore } from "../components/store/InterviewStore";
+import * as faceapi from "face-api.js";
 
 export default function InterviewSection() {
   const [isRecording, setIsRecording] = useState(false);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [timer, setTimer] = useState(180);
+  const [faceExpressions, setFaceExpressions] = useState(null);
+  const [modelsLoaded, setModelsLoaded] = useState(false);
 
   const videoRef = useRef(null);
+  const canvasRef = useRef(null);
+  const detectionIntervalRef = useRef(null);
+
   const {
     questions,
     details,
@@ -49,27 +55,83 @@ export default function InterviewSection() {
 
   const navigate = useNavigate();
 
-  // Enable Camera
+  // Unified effect for loading models, starting camera, and detection
   useEffect(() => {
-    const enableStream = async () => {
+    const loadModelsAndStartCamera = async () => {
+      const MODEL_URL = "/models";
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({
-          video: true,
-        });
-        if (videoRef.current) videoRef.current.srcObject = stream;
-      } catch (err) {
-        console.error("Error accessing camera:", err);
-      }
-    };
-    enableStream();
-    return () => {
-      if (videoRef.current?.srcObject) {
-        videoRef.current.srcObject.getTracks().forEach((track) => track.stop());
-      }
-    };
-  }, []);
+        await faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL);
+        await faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL);
+        await faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL);
+        await faceapi.nets.faceExpressionNet.loadFromUri(MODEL_URL);
+        setModelsLoaded(true);
 
-  // Timer
+        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+        }
+      } catch (error) {
+        console.error("Failed to load face-api models or camera:", error);
+      }
+    };
+
+    const startDetection = () => {
+      const video = videoRef.current;
+      const canvas = canvasRef.current;
+      if (!video || !canvas || video.paused || video.ended) return;
+
+      const displaySize = { width: video.videoWidth, height: video.videoHeight };
+      faceapi.matchDimensions(canvas, displaySize);
+
+      detectionIntervalRef.current = setInterval(async () => {
+        const detections = await faceapi
+          .detectAllFaces(video, new faceapi.TinyFaceDetectorOptions())
+          .withFaceLandmarks()
+          .withFaceExpressions();
+
+        const resizedDetections = faceapi.resizeResults(detections, displaySize);
+        const ctx = canvas.getContext("2d");
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        
+        faceapi.draw.drawDetections(canvas, resizedDetections);
+        faceapi.draw.drawFaceExpressions(canvas, resizedDetections);
+
+        if (detections.length > 0) {
+          const expressions = detections[0].expressions;
+          const sortedExpressions = Object.entries(expressions).sort(
+            (a, b) => b[1] - a[1]
+          );
+          setFaceExpressions(sortedExpressions[0]);
+        } else {
+          setFaceExpressions(null);
+        }
+      }, 100);
+    };
+
+    if (modelsLoaded) {
+      const currentVideoRef = videoRef.current;
+      if (currentVideoRef) {
+        currentVideoRef.addEventListener("play", startDetection);
+      }
+    } else {
+      loadModelsAndStartCamera();
+    }
+
+    return () => {
+      if (detectionIntervalRef.current) {
+        clearInterval(detectionIntervalRef.current);
+      }
+      const currentVideoRef = videoRef.current;
+      if (currentVideoRef) {
+        currentVideoRef.removeEventListener("play", startDetection);
+        if (currentVideoRef.srcObject) {
+          currentVideoRef.srcObject.getTracks().forEach((track) => track.stop());
+        }
+      }
+    };
+  }, [modelsLoaded]);
+
+  // Timer logic
   useEffect(() => {
     let interval = null;
     if (isRecording && timer > 0) {
@@ -90,7 +152,7 @@ export default function InterviewSection() {
   const handleStopRecording = () => {
     setIsRecording(false);
     SpeechRecognition.stopListening();
-    addTranscript(currentQuestion.number, transcript || ""); // save transcript
+    addTranscript(currentQuestion.number, transcript || "");
   };
 
   const handleNext = async () => {
@@ -98,7 +160,7 @@ export default function InterviewSection() {
       setCurrentQuestionIndex((prev) => prev + 1);
       setTimer(currentQuestion.timer);
       resetTranscript();
-      console.log(interviewQuestions);
+      
     } else {
       await getFeedback(questions, transcriptsAnswers, details);
       if (loading) {
@@ -113,7 +175,6 @@ export default function InterviewSection() {
   const minutes = Math.floor(timer / 60);
   const seconds = timer % 60;
 
-  // Button state
   let buttonLabel, buttonIcon, buttonColor;
   if (!isRecording && !transcript) {
     buttonLabel = "Start Recording";
@@ -133,6 +194,24 @@ export default function InterviewSection() {
     return <p>Your browser does not support speech recognition.</p>;
   }
 
+  const getSuggestion = (expression) => {
+    switch (expression) {
+      case "sad":
+      case "angry":
+      case "disgusted":
+        return "Try to maintain a positive and calm expression.";
+      case "surprised":
+      case "fearful":
+        return "Keep your facial expressions composed and professional.";
+      case "happy":
+        return "You look confident and friendly! Maintain this expression.";
+      case "neutral":
+        return "Your expression is neutral. A slight smile can be more engaging.";
+      default:
+        return "Focus on maintaining a positive and confident demeanor.";
+    }
+  };
+
   return (
     <div>
       <MainNavbar />
@@ -151,7 +230,7 @@ export default function InterviewSection() {
             </p>
           </div>
         </div>
-
+        <hr />
         {/* Main content */}
         <section className="grid grid-cols-1 lg:grid-cols-12 gap-8">
           {/* Left */}
@@ -223,34 +302,80 @@ export default function InterviewSection() {
                     muted
                     className="w-full h-full object-cover"
                   ></video>
+                  <canvas ref={canvasRef} className="absolute top-0 left-0" />
                 </div>
               </CardContent>
             </Card>
+            <hr />
 
+            {/* Real-time Expression Feedback Card */}
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center">
-                  <Lightbulb className="mr-2 h-5 w-5" /> Tips
-                </CardTitle>
+                <CardTitle>Real-time Feedback</CardTitle>
+                <CardDescription>Facial Expression</CardDescription>
               </CardHeader>
               <CardContent>
-                {currentQuestion.tips ? (
-                  <ul className="list-disc list-inside space-y-2">
-                    {Object.entries(currentQuestion.tips).map(
-                      ([key, value]) => (
-                        <li key={key} className="text-sm text-muted-foreground">
-                          <strong>{key}:</strong> {value}
-                        </li>
-                      )
-                    )}
-                  </ul>
+                {modelsLoaded ? (
+                  faceExpressions ? (
+                    <>
+                      <p className="text-xl font-bold capitalize mb-2">
+                        {faceExpressions[0]}
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        **Confidence:** {(faceExpressions[1] * 100).toFixed(2)}%
+                      </p>
+                      <p className="mt-4 text-sm font-semibold">
+                        **Suggestion:**{" "}
+                        <span className="text-muted-foreground font-normal">
+                          {getSuggestion(faceExpressions[0])}
+                        </span>
+                      </p>
+                    </>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">
+                      No face detected. Please ensure your camera is visible.
+                    </p>
+                  )
                 ) : (
-                  <p className="text-sm text-muted-foreground">
-                    No tips available.
+                  <p className="text-sm text-muted-foreground animate-pulse">
+                    Loading models...
                   </p>
                 )}
               </CardContent>
             </Card>
+            <hr />
+
+            {details.isStrictMock ? (
+              <div></div>
+            ) : (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center">
+                    <Lightbulb className="mr-2 h-5 w-5" /> Tips
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {currentQuestion.tips ? (
+                    <ul className="list-disc list-inside space-y-2">
+                      {Object.entries(currentQuestion.tips).map(
+                        ([key, value]) => (
+                          <li
+                            key={key}
+                            className="text-sm text-muted-foreground"
+                          >
+                            <strong>{key}:</strong> {value}
+                          </li>
+                        )
+                      )}
+                    </ul>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">
+                      No tips available.
+                    </p>
+                  )}
+                </CardContent>
+              </Card>
+            )}
           </div>
         </section>
       </div>

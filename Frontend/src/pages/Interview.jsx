@@ -7,6 +7,7 @@ import {
   TimerIcon,
   User,
   Briefcase,
+  Sparkle,
 } from "lucide-react";
 import {
   Card,
@@ -30,6 +31,7 @@ import {
 } from "../components/ui/select";
 
 import { interviewStore } from "../components/store/InterviewStore";
+import { toast } from "sonner";
 
 export default function Interview() {
   const navigate = useNavigate();
@@ -40,9 +42,11 @@ export default function Interview() {
     JobRole: "Not selected",
     DifficultyLevel: "Not selected",
     duration: "--:--",
+    isStrictMock: false,
+    isResumeAnalysis: false,
   });
 
-  const { getQuestions, loading } = interviewStore();
+  const { setDetails, getQuestions, loading, error } = interviewStore();
 
   const interviews = [
     {
@@ -307,6 +311,7 @@ export default function Interview() {
                               (j) => j.jobrole === interviewDetails.JobRole
                             )?.value
                       }
+                      disabled={interviewDetails.isResumeAnalysis === true}
                       onValueChange={(value) => {
                         const selectedJob = jobsRoles.find(
                           (j) => j.value === value
@@ -393,7 +398,7 @@ export default function Interview() {
                     }
                   />
                   <label htmlFor="resume-analysis-switch">
-                    Analyze from Resume
+                    Take Interview from resume
                   </label>
                 </div>
               </div>
@@ -462,22 +467,33 @@ export default function Interview() {
                   </li>
                 </ul>
                 <Button
-                  className="w-full "
+                  className="w-full"
                   disabled={
+                    loading ||
                     interviewDetails.InterviewType === "Not selected" ||
-                    interviewDetails.JobRole === "Not selected" ||
                     interviewDetails.DifficultyLevel === "Not selected" ||
-                    loading === true
+                    (!interviewDetails.isResumeAnalysis &&
+                      interviewDetails.JobRole === "Not selected")
                   }
                   onClick={async () => {
+                    setDetails(interviewDetails);
                     await getQuestions(interviewDetails);
+
+                    const { error, loading } = interviewStore.getState(); // read latest state
+
+                    if (error) {
+                      toast.error(error);
+                      navigate("/interview");
+                      return;
+                    }
                     if (!loading) {
                       navigate("/interview/section");
                     }
                   }}
                 >
-                  Start Interview
+                  {loading ? "Generating..." : "Start Interview"}
                 </Button>
+
                 <div className="mt-4">
                   <h3 className="font-semibold text-md mb-1">Interview Tips</h3>
                   <ul className="list-disc list-inside text-xs text-muted-foreground space-y-1">

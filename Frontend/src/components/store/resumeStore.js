@@ -2,7 +2,7 @@ import { create } from "zustand";
 import { v4 as uuidv4 } from "uuid";
 import api from "@/utils/axios";
 
-export const useResumeStore = create((set, get) => ({
+export const useResumeStore = create((set) => ({
   resumeData: {
     personal: {
       name: null,
@@ -21,59 +21,48 @@ export const useResumeStore = create((set, get) => ({
   },
   showPdf: true,
   loading: false,
+  error: null,
+  section: null,
 
   setShowPdf: (val) => set({ showPdf: val }),
 
   handleChange: (section, field, value, index = null) => {
     set({ showPdf: false });
+
     set((state) => {
       const prevData = state.resumeData;
+      let updatedData = { ...prevData };
 
-      if (section === "languages") {
-        return {
-          resumeData: {
-            ...prevData,
-            languages: value
-              .split(",")
-              .map((s) => s.trim())
-              .filter((s) => s !== ""),
-          },
-        };
+      if (["languages", "technical", "soft"].includes(field)) {
+        // Handle comma-separated lists (languages and skills)
+        const listValue = value
+          .split(",")
+          .map((s) => s.trim())
+          .filter((s) => s !== "");
+        if (section === "languages") {
+          updatedData.languages = listValue;
+        } else if (section === "skills") {
+          updatedData.skills = {
+            ...updatedData.skills,
+            [field]: listValue,
+          };
+        }
       } else if (index !== null) {
+        // Handle array sections (experience, education, projects, achievements)
         const updatedArray = [...prevData[section]];
         updatedArray[index] = { ...updatedArray[index], [field]: value };
-        return { resumeData: { ...prevData, [section]: updatedArray } };
-      } else if (section === "skills") {
-        return {
-          resumeData: {
-            ...prevData,
-            skills: {
-              ...prevData.skills,
-              [field]: value
-                .split(",")
-                .map((s) => s.trim())
-                .filter((s) => s !== ""),
-            },
-          },
-        };
-      }
-      // Add a special case for the 'summary' section
-      else if (section === "summary") {
-        return {
-          resumeData: {
-            ...prevData,
-            summary: value,
-          },
-        };
+        updatedData[section] = updatedArray;
+      } else if (section === "summary") {
+        // Handle the summary section
+        updatedData.summary = value;
       } else {
-        return {
-          resumeData: {
-            ...prevData,
-            [section]: { ...prevData[section], [field]: value },
-          },
-        };
+        // Handle simple object sections (personal)
+        updatedData[section] = { ...prevData[section], [field]: value };
       }
+
+      return { resumeData: updatedData };
     });
+
     setTimeout(() => set({ showPdf: true }), 100);
   },
 
@@ -261,11 +250,121 @@ export const useResumeStore = create((set, get) => ({
     }
   },
 
-  handleAIButtonClick: (sectionName) => {
-    console.log(`AI optimization requested for ${sectionName}`);
-    alert(
-      `AI optimization for ${sectionName} is not yet implemented. This will help make your content ATS-friendly.`
-    );
+  handleAIButtonClick: async (
+    sectionName,
+    sectionData,
+    resumeData,
+    userPrompt
+  ) => {
+    const AI_Response = await api.post("/api/v1/resume/ai", {
+      sectionName: sectionName,
+      sectionData: sectionData,
+      resume: resumeData,
+      userPrompt: userPrompt,
+    });
+    switch (sectionName) {
+      case "Summary": {
+        set((state) => ({
+          resumeData: {
+            ...state.resumeData,
+            summary: AI_Response.data?.data?.Summary, // overwrite summary
+          },
+        }));
+        break;
+      }
+
+      case "Experience": {
+        const aiExperiences = AI_Response?.data?.data;
+        if (!aiExperiences) return;
+
+        set((state) => ({
+          resumeData: {
+            ...state.resumeData,
+            projects: state.resumeData.projects.map((pro) => {
+              const aiExperience = aiExperiences.find((p) => p.id === pro.id);
+              return {
+                ...pro,
+                description: aiExperience?.description || pro.description,
+              };
+            }),
+          },
+        }));
+        break;
+      }
+
+      case "Projects": {
+        const aiProjects = AI_Response?.data?.data;
+        if (!aiProjects) return;
+
+        set((state) => ({
+          resumeData: {
+            ...state.resumeData,
+            projects: state.resumeData.projects.map((pro) => {
+              const aiProject = aiProjects.find((p) => p.id === pro.id);
+              return {
+                ...pro,
+                description: aiProject?.description || pro.description,
+              };
+            }),
+          },
+        }));
+        break;
+      }
+
+      case "Achievements": {
+        try {
+          let aiAchievements = AI_Response?.data?.data;
+          console.log(aiAchievements);
+
+          if (!aiAchievements) return;
+
+          if (!Array.isArray(aiAchievements)) {
+            aiAchievements = [aiAchievements];
+          }
+
+          set((state) => ({
+            resumeData: {
+              ...state.resumeData,
+              achievements: state.resumeData.achievements.map((ach) => {
+                const aiAchievement =
+                  aiAchievements.find((a) => a.id === ach.id) ||
+                  aiAchievements[index];
+                return {
+                  ...ach,
+                  description: aiAchievement?.description || ach.description,
+                };
+              }),
+            },
+          }));
+        } catch (error) {
+          set({ error: error });
+        }
+        break;
+      }
+
+      case "FixEverything": {
+        try {
+          set({ loading: true });
+          const fetched = AI_Response?.data?.data;
+          console.log("FixEverything response:", fetched);
+
+          if (fetched) {
+            set({ resumeData: fetched, loading: false });
+          } else {
+            set({ error: "No data returned from AI", loading: false });
+          }
+        } catch (error) {
+          set({
+            error: error.response?.data?.message || "FixEverything failed",
+            loading: false,
+          });
+        }
+        break;
+      }
+
+      default:
+        set({ error: "Not able to get response from AI" });
+    }
   },
 
   handleDownloadPdf: () => {
@@ -304,18 +403,17 @@ export const useResumeStore = create((set, get) => ({
 
   uploadToDataBase: async (resumeData) => {
     try {
-      console.log(resumeData);
-
-      const response = await api.post("/api/v1/resume/save", { resumeData });
-      console.log("Saved resume:", response.data);
+      set({ loading: true });
+      await api.post("/api/v1/resume/save", { resumeData });
+      set({ loading: false });
     } catch (err) {
-      console.error("Error saving resume:", err.response.error);
+      set({ loading: false, error: err.response?.data?.message });
     }
   },
 
   fetchFromDB: async () => {
-    set({ loading: true });
     try {
+      set({ loading: true });
       const response = await api.post("/api/v1/resume/fetch");
       const fetched = response.data?.data;
 
@@ -370,13 +468,10 @@ export const useResumeStore = create((set, get) => ({
           languages: fetched.languages || [],
         };
 
-        set({ resumeData: normalized });
-        console.log("Normalized Resume fetched:", normalized);
+        set({ resumeData: normalized, loading: false });
       }
     } catch (error) {
-      console.error("Error fetching resume:", error);
+      set({ error: error.response?.data?.message, loading: false });
     }
-    set({ loading: false });
   },
-  
 }));

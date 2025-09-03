@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useContext, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import MainNavbar from "../components/global/MainNavbar";
 import { Button } from "../components/ui/button";
@@ -11,6 +11,7 @@ import {
   ArrowDown,
   Trash2,
   Save,
+  Loader2,
 } from "lucide-react";
 import {
   Card,
@@ -18,6 +19,14 @@ import {
   CardHeader,
   CardTitle,
 } from "../components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { Input } from "../components/ui/input";
 import { Textarea } from "../components/ui/textarea";
 import { Label } from "../components/ui/label";
@@ -33,6 +42,7 @@ import {
 } from "@react-pdf/renderer";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useResumeStore } from "@/components/store/resumeStore";
+import { AuthContext } from "@/components/context/AuthContext";
 
 // Error Boundary Component to catch PDF rendering errors
 class ErrorBoundary extends React.Component {
@@ -452,7 +462,8 @@ export default function Resume() {
     loading,
   } = useResumeStore();
 
-  // The handleDownloadPdf function is moved here
+  const { user } = useContext(AuthContext);
+
   const handleDownloadPdf = async () => {
     try {
       const blob = await pdf(<MyResumeDocument data={resumeData} />).toBlob();
@@ -474,14 +485,20 @@ export default function Resume() {
   };
 
   const handleSavePdf = async () => {
-    console.log(resumeData);
     await uploadToDataBase(resumeData);
   };
 
-  useEffect(() => {
-  fetchFromDB();
-}, []);
+  const [userPrompt, setUserPrompt] = useState(
+    "Make my resume with ATS compactable for the job role of software engineer at Microsoft"
+  );
 
+  useEffect(() => {
+    fetchFromDB();
+  }, []);
+
+  const handlePromptChange = (e) => {
+    setUserPrompt(e.target.value);
+  };
 
   return (
     <div className="bg-background min-h-screen text-foreground font-inter">
@@ -530,70 +547,74 @@ export default function Resume() {
                       <CardTitle className="text-lg">
                         Personal Information
                       </CardTitle>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() =>
-                          handleAIButtonClick("Personal Information")
-                        }
-                        className="text-primary hover:text-primary/80"
-                      >
-                        <Sparkles className="h-4 w-4 mr-1" /> AI
-                      </Button>
                     </CardHeader>
                     <CardContent className="space-y-4">
-                      <div>
-                        <Label htmlFor="name">Full Name</Label>
-                        <Input
-                          id="name"
-                          value={resumeData.personal.name}
-                          onChange={(e) =>
-                            handleChange("personal", "name", e.target.value)
-                          }
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="email">Email</Label>
-                        <Input
-                          id="email"
-                          type="email"
-                          value={resumeData.personal.email}
-                          onChange={(e) =>
-                            handleChange("personal", "email", e.target.value)
-                          }
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="phone">Phone</Label>
-                        <Input
-                          id="phone"
-                          type="tel"
-                          value={resumeData.personal.phone}
-                          onChange={(e) =>
-                            handleChange("personal", "phone", e.target.value)
-                          }
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="linkedin">LinkedIn Profile URL</Label>
-                        <Input
-                          id="linkedin"
-                          value={resumeData.personal.linkedin}
-                          onChange={(e) =>
-                            handleChange("personal", "linkedin", e.target.value)
-                          }
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="github">GitHub Profile URL</Label>
-                        <Input
-                          id="github"
-                          value={resumeData.personal.github}
-                          onChange={(e) =>
-                            handleChange("personal", "github", e.target.value)
-                          }
-                        />
-                      </div>
+                      <form
+                        onSubmit={(e) => e.preventDefault()}
+                        className="space-y-4"
+                      >
+                        <div>
+                          <Label htmlFor="name">Full Name</Label>
+                          <Input
+                            id="name"
+                            value={resumeData.personal.name || ""}
+                            onChange={(e) =>
+                              handleChange("personal", "name", e.target.value)
+                            }
+                            placeholder={`e.g., ${user.userName.first}`}
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="email">Email</Label>
+                          <Input
+                            id="email"
+                            type="email"
+                            value={resumeData.personal.email || ""}
+                            onChange={(e) =>
+                              handleChange("personal", "email", e.target.value)
+                            }
+                            placeholder={`e.g., ${user.email}`}
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="phone">Phone</Label>
+                          <Input
+                            id="phone"
+                            type="tel"
+                            value={resumeData.personal.phone || ""}
+                            onChange={(e) =>
+                              handleChange("personal", "phone", e.target.value)
+                            }
+                            placeholder="e.g., +1234567890"
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="linkedin">LinkedIn Profile URL</Label>
+                          <Input
+                            id="linkedin"
+                            value={resumeData.personal.linkedin || ""}
+                            onChange={(e) =>
+                              handleChange(
+                                "personal",
+                                "linkedin",
+                                e.target.value
+                              )
+                            }
+                            placeholder="e.g., https://linkedin.com/in/johndoe"
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="github">GitHub Profile URL</Label>
+                          <Input
+                            id="github"
+                            value={resumeData.personal.github || ""}
+                            onChange={(e) =>
+                              handleChange("personal", "github", e.target.value)
+                            }
+                            placeholder="e.g., https://github.com/johndoe"
+                          />
+                        </div>
+                      </form>
                     </CardContent>
                   </Card>
                 </TabsContent>
@@ -608,7 +629,12 @@ export default function Resume() {
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => handleAIButtonClick("Summary")}
+                        onClick={async () => {
+                          await handleAIButtonClick(
+                            "Summary",
+                            resumeData.summary
+                          );
+                        }}
                         className="text-primary hover:text-primary/80"
                       >
                         <Sparkles className="h-4 w-4 mr-1" /> AI
@@ -642,7 +668,12 @@ export default function Resume() {
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => handleAIButtonClick("Experience")}
+                          onClick={async () =>
+                            await handleAIButtonClick(
+                              "Experience",
+                              resumeData.experience
+                            )
+                          }
                           className="text-primary hover:text-primary/80"
                         >
                           <Sparkles className="h-4 w-4 mr-1" /> AI
@@ -821,14 +852,6 @@ export default function Resume() {
                         >
                           Add Education
                         </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleAIButtonClick("Education")}
-                          className="text-primary hover:text-primary/80"
-                        >
-                          <Sparkles className="h-4 w-4 mr-1" /> AI
-                        </Button>
                       </div>
                     </CardHeader>
                     <CardContent className="space-y-6">
@@ -996,14 +1019,19 @@ export default function Resume() {
                           variant="outline"
                           size="sm"
                           onClick={handleFetchGithubProjects}
-                          className="bg-secondary hover:bg-secondary/80 text-secondary-foreground"
+                          className="hover:bg-secondary/80 text-secondary-foreground"
                         >
                           <Github className="h-4 w-4 mr-1" /> Fetch from GitHub
                         </Button>
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => handleAIButtonClick("Projects")}
+                          onClick={async () => {
+                            await handleAIButtonClick(
+                              "Projects",
+                              resumeData.projects
+                            );
+                          }}
                           className="text-primary hover:text-primary/80"
                         >
                           <Sparkles className="h-4 w-4 mr-1" /> AI
@@ -1200,7 +1228,12 @@ export default function Resume() {
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => handleAIButtonClick("Achievements")}
+                          onClick={() =>
+                            handleAIButtonClick(
+                              "Achievements",
+                              resumeData.achievements
+                            )
+                          }
                           className="text-primary hover:text-primary/80"
                         >
                           <Sparkles className="h-4 w-4 mr-1" /> AI
@@ -1293,14 +1326,6 @@ export default function Resume() {
                   <Card className="bg-card border border-border text-foreground">
                     <CardHeader className="flex flex-row justify-between items-center">
                       <CardTitle className="text-lg">Skills</CardTitle>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleAIButtonClick("Skills")}
-                        className="text-primary hover:text-primary/80"
-                      >
-                        <Sparkles className="h-4 w-4 mr-1" /> AI
-                      </Button>
                     </CardHeader>
                     <CardContent className="space-y-4">
                       <div>
@@ -1336,14 +1361,6 @@ export default function Resume() {
                   <Card className="bg-card border border-border text-foreground">
                     <CardHeader className="flex flex-row justify-between items-center">
                       <CardTitle className="text-lg">Languages</CardTitle>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleAIButtonClick("Languages")}
-                        className="text-primary hover:text-primary/80"
-                      >
-                        <Sparkles className="h-4 w-4 mr-1" /> AI
-                      </Button>
                     </CardHeader>
                     <CardContent>
                       <Label htmlFor="languages-list">
@@ -1368,42 +1385,138 @@ export default function Resume() {
                 <CardHeader className="flex flex-row justify-between items-center">
                   <CardTitle className="text-lg">Resume Preview</CardTitle>
                   <div className="flex gap-4 flex-wrap ">
+                    <Dialog>
+                      <DialogTrigger asChild>
+                        <Button
+                          size="sm"
+                          className="bg-primary hover:bg-primary/80 cursor-pointer"
+                        >
+                          <Sparkles className="h-4 w-4 mr-1" /> AI
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent>
+                        <DialogHeader>
+                          <DialogTitle>
+                            Use AI to Fine-Tune Your Resume
+                          </DialogTitle>
+                          <DialogDescription asChild>
+                            <div className="space-y-4">
+                              <p className="text-muted-foreground text-sm">
+                                Enter your prompt to improve a specific section
+                                of your resume. You can also choose from the
+                                suggestions below.
+                              </p>
+                              <div className="space-y-2">
+                                <label
+                                  htmlFor="ai-prompt"
+                                  className="text-sm font-medium"
+                                >
+                                  Your Custom Prompt:
+                                </label>
+                                <Textarea
+                                  id="ai-prompt"
+                                  placeholder="e.g., 'Rewrite my summary to be more concise and impactful.'"
+                                  value={userPrompt}
+                                  onChange={handlePromptChange}
+                                />
+                              </div>
+                              <div>
+                                <label className="text-sm font-medium">
+                                  Suggestions:
+                                </label>
+                                <ul className="list-disc list-inside text-muted-foreground text-sm space-y-1 mt-2">
+                                  <li>
+                                    Enhance my experience descriptions with
+                                    stronger action verbs.
+                                  </li>
+                                  <li>
+                                    Review my project section and suggest
+                                    improvements for clarity.
+                                  </li>
+                                  <li>
+                                    Rephrase my technical skills section to
+                                    highlight my expertise in a specific area.
+                                  </li>
+                                  <li>
+                                    Check for spelling and grammar mistakes
+                                    throughout the resume.
+                                  </li>
+                                  <li>
+                                    Write a professional summary based on my
+                                    experience and skills.
+                                  </li>
+                                </ul>
+                              </div>
+                            </div>
+                          </DialogDescription>
+                        </DialogHeader>
+                        <div className="flex justify-end mt-4">
+                          <Button
+                            onClick={() => {
+                              handleAIButtonClick(
+                                "FixEverything",
+                                null,
+                                resumeData,
+                                userPrompt
+                              );
+                            }}
+                            type="submit"
+                            className="bg-primary hover:bg-primary/80"
+                            disabled={userPrompt.trim().length === 0}
+                          >
+                            Apply Changes
+                          </Button>
+                        </div>
+                      </DialogContent>
+                    </Dialog>
                     <Button
                       onClick={handleDownloadPdf}
                       size="sm"
-                      className="bg-primary hover:bg-primary/80"
+                      className="bg-primary hover:bg-primary/80 cursor-pointer"
                     >
                       <Download className="h-4 w-4 mr-1" /> Download PDF
                     </Button>
                     <Button
                       onClick={handleSavePdf}
                       size="sm"
-                      className="bg-primary hover:bg-primary/80"
+                      className="bg-primary hover:bg-primary/80 cursor-pointer"
                     >
-                      <Save className="h-4 w-4 mr-1" /> Save PDF
+                      {loading ? (
+                        <>
+                          <Loader2 className="h-4 w-4 mr-1" /> Loading...
+                        </>
+                      ) : (
+                        <>
+                          <Save className="h-4 w-4 mr-1" /> Save PDF
+                        </>
+                      )}
                     </Button>
                   </div>
                 </CardHeader>
-                <CardContent className="h-[700px] p-0 overflow-hidden">
-                  <div className="h-full w-full overflow-hidden">
-                    <ErrorBoundary>
-                      {showPdf ? (
-                        <PDFViewer
-                          width="100%"
-                          height="100%"
-                          showToolbar={false}
-                          className="overflow-hidden"
-                        >
-                          <MyResumeDocument data={resumeData} />
-                        </PDFViewer>
-                      ) : (
-                        <div className="flex items-center justify-center h-full text-muted-foreground">
-                          Updating preview...
-                        </div>
-                      )}
-                    </ErrorBoundary>
-                  </div>
-                </CardContent>
+                {loading ? (
+                  <></>
+                ) : (
+                  <CardContent className="h-[700px] p-0 overflow-hidden">
+                    <div className="h-full w-full overflow-hidden">
+                      <ErrorBoundary>
+                        {showPdf ? (
+                          <PDFViewer
+                            width="100%"
+                            height="100%"
+                            showToolbar={false}
+                            className="overflow-hidden"
+                          >
+                            <MyResumeDocument data={resumeData} />
+                          </PDFViewer>
+                        ) : (
+                          <div className="flex items-center justify-center h-full text-muted-foreground">
+                            Updating preview...
+                          </div>
+                        )}
+                      </ErrorBoundary>
+                    </div>
+                  </CardContent>
+                )}
               </Card>
             </div>
           </section>

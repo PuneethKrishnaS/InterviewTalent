@@ -1,10 +1,10 @@
-import { errorHandler } from "../middlewares/errorHandler.middleware.js";
 import { Interview } from "../models/interview.model.js";
+import { Resume } from "../models/resume.model.js";
 import { User } from "../models/user.model.js";
 import { appError } from "../utils/appError.js";
 import { appResponse } from "../utils/appResponse.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
-import Groq from "groq-sdk";
+import { groqHamdlerAI } from "../utils/groqAI.js";
 
 const interviewGetQuestions = asyncHandler(async (req, res) => {
   try {
@@ -12,14 +12,93 @@ const interviewGetQuestions = asyncHandler(async (req, res) => {
       throw new appError(500, "Unauthorized user");
     }
 
-    const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
-    const { InterviewType, JobRole, DifficultyLevel } = req.body;
+    const { InterviewType, JobRole, DifficultyLevel, isResumeAnalysis } =
+      req.body;
 
-    const response = await groq.chat.completions.create({
-      messages: [
-        {
-          role: "user",
-          content: `Generate 2 interview questions for a ${JobRole} in a ${InterviewType} interview. Difficulty: ${DifficultyLevel}.
+    if (isResumeAnalysis) {
+      var resume = await Resume.findOne({ user: req.user._id });
+      if (!resume) {
+        throw new appError(500, "Please update the resume");
+      }
+      var fetchedResume = {
+        personal: {
+          name: resume.personalInformation?.name || "",
+          email: resume.personalInformation?.email || "",
+          phone: resume.personalInformation?.phone || "",
+          linkedin: resume.personalInformation?.linkedin || "",
+          github: resume.personalInformation?.github || "",
+        },
+        summary: resume.summary || "",
+        experience: (resume.experiences || []).map((exp) => ({
+          id: exp._id,
+          title: exp.title || "",
+          company: exp.company || "",
+          location: exp.location || "",
+          startDate: exp.startDate || "",
+          endDate: exp.endDate || "",
+          description: exp.description || "",
+        })),
+        education: (resume.educations || []).map((edu) => ({
+          id: edu._id,
+          degree: edu.degree || "",
+          institution: edu.institution || "",
+          location: edu.location || "",
+          startDate: edu.startDate || "",
+          endDate: edu.endDate || "",
+          marks: edu.marks || "",
+        })),
+        projects: (resume.projects || []).map((p) => ({
+          id: p._id,
+          name: p.project.projectName || "",
+          startDate: p.project.startDate || "",
+          endDate: p.project.endDate || "",
+          technologies: (p.project.technologies || []).join(", "),
+          description: p.project.description || "",
+          liveLink: p.project.liveLink || "",
+          githubLink: p.project.githubLink || "",
+        })),
+        achievements: (resume.achivements || []).map((a) => ({
+          id: a._id,
+          description: a.description || "",
+          documentLink: a.documentLink || "",
+        })),
+        skills: {
+          technical: resume.skills?.technical || [],
+          soft: resume.skills?.soft || [],
+        },
+        languages: resume.languages || [],
+      };
+    }
+
+    const selectedPrompt = isResumeAnalysis
+      ? `You are an AI interview assistant. Generate 2 ${InterviewType} interview questions based ONLY on the candidate’s resume data below with  Difficulty: ${DifficultyLevel}. Focus on their tech stack, projects, experience, and achievements.
+
+Resume JSON:
+${JSON.stringify(fetchedResume, null, 2)}
+
+
+Each object must have this structure:
+[
+  {
+    "number": 1,
+    "question": "string",
+    "timer": number (in seconds, e.g., 180),
+    "tips": {
+      "Keyword1": "string explanation",
+      "Keyword2": "string explanation",
+      "Keyword3": "string explanation"
+    }
+  }
+]
+
+Rules:
+- "number" should be sequential starting from 1 to 10.
+- "question" must be role-specific, relevant to the candidate’s skills, projects, or leadership experience.
+- "timer" should be between 120 and 300 seconds depending on complexity.
+- "tips" must contain 2–4 entries. Each key should be a short bold-style keyword (e.g., React, Problem-Solving, MongoDB, Leadership) and the value should be a one-sentence explanation.
+- Do not include Markdown, extra text, or explanations outside of the JSON.
+`
+      : `You are an AI interview assistant. Generate 2 interview questions for a ${JobRole} in a ${InterviewType} interview. Difficulty: ${DifficultyLevel}.
   Return the result strictly in JSON format as an array. 
   Each object must have this structure:
   
@@ -42,18 +121,19 @@ const interviewGetQuestions = asyncHandler(async (req, res) => {
   - "timer" should be between 120 and 300 seconds depending on question complexity.
   - "tips" must contain 2–4 entries. Each key should be a short bold-style keyword (e.g., HTML, Problem-Solving, Algorithms) and the value should be a one-sentence explanation.
   - Do not include Markdown formatting, extra text, or explanations outside of the JSON.
-  `,
+`;
+
+    const groqQuestions = await groqHamdlerAI({
+      messages: [
+        {
+          role: "user",
+          content: selectedPrompt,
         },
       ],
-      model: "openai/gpt-oss-20b",
-      response_format: {
-        type: "json_object",
-      },
     });
 
-    const groqQuestions = response.choices[0]?.message?.content;
-
-    res.json(new appResponse(200, groqQuestions, "AI data"));
+    res.status(201).json(new appResponse(201, groqQuestions, "AI data stored"));
+    
   } catch (error) {
     throw new appError(401, error.message);
   }
@@ -65,13 +145,13 @@ const interviewGetFeedback = asyncHandler(async (req, res) => {
       throw new appError(401, "Unauthorized user");
     }
 
-    const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
     const { interviewData, questions, details } = req.body;
-    const response = await groq.chat.completions.create({
+
+    const groqFeedback = await groqHamdlerAI({
       messages: [
         {
           role: "user",
-          content: `Generate 2 interview questions for a ${details.JobRole} in a ${details.InterviewType} interview. Difficulty: ${details.DifficultyLevel}.
+          content: `Generate 1 interview questions for a ${details.JobRole} in a ${details.InterviewType} interview. Difficulty: ${details.DifficultyLevel}.
   Return the result strictly in JSON format as an array. 
   Each object must have this structure:
   
@@ -156,25 +236,9 @@ const interviewGetFeedback = asyncHandler(async (req, res) => {
   `,
         },
       ],
-
-      model: "openai/gpt-oss-20b",
-      response_format: {
-        type: "json_object",
-      },
     });
 
-    const groqFeedback = response.choices[0]?.message?.content;
-
-    // Parse JSON string from AI
-    let feedbackData;
-    try {
-      feedbackData = JSON.parse(groqFeedback);
-    } catch (err) {
-      throw new appError(500, "Invalid JSON from AI");
-    }
-
-    // Save to DB
-    await storeInterviewData(feedbackData, req.user);
+    await storeInterviewData(groqFeedback, req.user);
 
     res.status(201).json(new appResponse(201, groqFeedback, "AI data stored"));
   } catch (error) {
@@ -195,7 +259,7 @@ const storeInterviewData = async (feedbackData, user) => {
       questions: feedbackData.questions.map((q) => ({
         question: q.question,
         answer: q.answer,
-        tips: q.tips,  
+        tips: q.tips,
         feedback: q.feedback,
         feedbackRating: q.feedbackRating,
         feedbackSummary: q.feedbackSummary,

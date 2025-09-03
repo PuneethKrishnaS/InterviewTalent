@@ -14,17 +14,18 @@ import {
 export default function Github() {
   const navigate = useNavigate();
 
+  
   // Mock GitHub profile data
   const mockGithubData = {
     username: "dev_explorer",
     name: "Developer Explorer",
-    avatarUrl: "https://placehold.co/100x100/1A202C/FFFFFF?text=DE", // Placeholder image
+    avatarUrl: "https://placehold.co/100x100/1A202C/FFFFFF?text=DE",
     bio: "Passionate about open source, web development, and learning new technologies.",
     followers: 123,
     following: 45,
     publicRepos: 78,
     starredRepos: 25,
-    contributions: 1500, // Example: contributions in the last year
+    contributions: 1500,
     topLanguages: [
       { name: "JavaScript", percentage: "60%" },
       { name: "Python", percentage: "20%" },

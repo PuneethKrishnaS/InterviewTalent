@@ -5,24 +5,28 @@ export const interviewStore = create((set, get) => ({
   details: null,
   loading: false,
   questions: [],
-  error: null,
+  error: false,
   transcriptsAnswers: [],
   interviewData: {},
   interviewFeedback: {},
+
+  setDetails: (details) => {
+    set({ details: details });
+  },
 
   getQuestions: async (details) => {
     try {
       set({ loading: true });
       const res = await api.post("/api/v1/interview/getquestions", details);
-      const parsedQuestions = JSON.parse(res.data?.data) || [];
+      const parsedQuestions = res.data?.data || [];
       set({
         questions: parsedQuestions,
         loading: false,
         details,
       });
-      console.log(parsedQuestions);
     } catch (error) {
-      set({ error: error.message, loading: false });
+      set({ error: error.response?.data?.message, loading: false });
+      console.log(error);
     }
   },
 
@@ -51,14 +55,12 @@ export const interviewStore = create((set, get) => ({
       allInterviewData,
     };
 
-    console.log(interviewData, questions, details);
-
     const res = await api.post("/api/v1/interview/getfeedback", {
       interviewData,
       questions,
       details,
     });
 
-    set({ interviewFeedback: JSON.parse(res.data?.data), loading: false });
+    set({ interviewFeedback: res.data?.data, loading: false });
   },
 }));

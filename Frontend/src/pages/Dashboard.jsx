@@ -26,7 +26,7 @@ import { useContext } from "react";
 import { AuthContext } from "../components/context/AuthContext";
 
 export default function Dashboard() {
-  const { user, loading } = useContext(AuthContext);
+  const { user } = useContext(AuthContext);
   const navigate = useNavigate();
 
   const [stats] = useState({

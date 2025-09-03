@@ -47,7 +47,7 @@ export const AuthProvider = ({ children }) => {
 
   const logout = async () => {
     try {
-      const res = await api.post("/api/v1/users/auth/logout");
+      await api.post("/api/v1/users/auth/logout");
       setUser(null);
       setAuthenticated(false);
       setCheckingAuth(false);
