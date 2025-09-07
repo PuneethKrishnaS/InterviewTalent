@@ -6,8 +6,8 @@ import { User } from "../models/user.model.js";
 passport.use(
   new GitHubStrategy(
     {
-      clientID: "Ov23liHcpEER2MADCPLM",
-      clientSecret: "b612eb65725f6b894045d6729eaa383ca5df36f3",
+      clientID: process.env.GITHUB_CLIENT_ID,
+      clientSecret: process.env.GITHUB_CLIENT_SECRET,
       callbackURL: "http://localhost:8000/api/v1/users/auth/github/callback",
       scope: ["user:email"],
     },

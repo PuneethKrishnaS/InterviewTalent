@@ -3,6 +3,8 @@ import { Calculator, Camera, Code, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 
+import hero from "@/assets/hero.avif";
+
 export default function Hero() {
   return (
     <section className="min-h-fit w-full bg-gradient-to-b from-background from-50%  to-purple-400 dark:to-purple-950 dark:from-25%  items-center justify-center flex flex-col ">
@@ -57,7 +59,8 @@ export default function Hero() {
         </Link>
         <div className="my-8">
           <img
-            src="src/assets/image.png"
+            loading="lazy"
+            src={hero}
             alt="InterviewTalent Hero"
             className="rounded-xl shadow-2xl  "
           />

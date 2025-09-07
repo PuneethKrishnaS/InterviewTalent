@@ -24,18 +24,17 @@ import { useNavigate } from "react-router-dom";
 import { useContext } from "react";
 import { AuthContext } from "../components/context/AuthContext";
 
-// Illustrations - make sure these paths are correct in your project
-import voiceConvoImage from "../assets/voice_convo_illustration.png";
-import leetCodeIllustration from "../assets/leetcode_illustration.png"; // Example: coding desk, problems
-import githubIllustration from "../assets/github_illustration.png"; // Example: github octocat, code commits
-import interviewsMetricIllustration from "../assets/interviews_metric_illustration.png"; // Example: person talking to bot
-import resumeMetricIllustration from "../assets/resume_metric_illustration.png"; // Example: resume document
-import skillsMetricIllustration from "../assets/skills_metric_illustration.png"; // Example: dartboard, target
-import interviewActionIllustration from "../assets/interview_action_illustration.png"; // Example: person with mic
-import resumeActionIllustration from "../assets/resume_action_illustration.png"; // Example: person editing resume
-import aptitudeActionIllustration from "../assets/aptitude_action_illustration.png"; // Example: person taking test
-import groupDiscussionActionIllustration from "../assets/group_discussion_action_illustration.png"; // Example: group talking
-import insightsIllustration from "../assets/insights_illustration.png"; // Example: person with lightbulb
+import voiceConvoImage from "../assets/voice_convo_illustration.avif";
+import leetCodeIllustration from "../assets/leetcode_illustration.svg"; // Example: coding desk, problems
+import githubIllustration from "../assets/github_illustration.svg"; // Example: github octocat, code commits
+import interviewsMetricIllustration from "../assets/interviews_metric_illustration.svg"; // Example: person talking to bot
+import resumeMetricIllustration from "../assets/resume_metric_illustration.svg"; // Example: resume document
+import skillsMetricIllustration from "../assets/skills_metric_illustration.svg"; // Example: dartboard, target
+import interviewActionIllustration from "../assets/interview_action_illustration.svg"; // Example: person with mic
+import resumeActionIllustration from "../assets/resume_action_illustration.svg"; // Example: person editing resume
+import aptitudeActionIllustration from "../assets/aptitude_action_illustration.svg"; // Example: person taking test
+import groupDiscussionActionIllustration from "../assets/group_discussion_action_illustration.svg"; // Example: group talking
+import insightsIllustration from "../assets/insights_illustration.svg"; // Example: person with lightbulb
 
 export default function Dashboard() {
   const { user } = useContext(AuthContext);
@@ -209,7 +208,7 @@ export default function Dashboard() {
                           </p>
                         )}
                       </div>
-                      <div className="absolute bottom-0 right-0 w-28 h-28 opacity-70 group-hover:opacity-100 transition-opacity duration-300 translate-x-1/4 translate-y-1/4">
+                      <div className="absolute bottom-0 right-0 w-38 h-48 opacity-70 group-hover:opacity-100 transition-opacity duration-300 translate-x-1/4 translate-y-1/4">
                         <img
                           src={metric.illustration}
                           alt={`${metric.title} illustration`}
@@ -242,7 +241,7 @@ export default function Dashboard() {
                           {action.description}
                         </p>
                       </div>
-                      <div className="absolute bottom-0 right-0 w-28 h-28 opacity-70 group-hover:opacity-100 transition-opacity duration-300 translate-x-1/4 translate-y-1/4">
+                      <div className="absolute bottom-0 right-0 w-42 opacity-70 group-hover:opacity-100 transition-opacity duration-300 translate-x-1/4 translate-y-1/4">
                         <img
                           src={action.illustration}
                           alt={`${action.title} illustration`}

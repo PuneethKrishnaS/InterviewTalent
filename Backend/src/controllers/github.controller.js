@@ -99,8 +99,6 @@ const fetchUserFromGithub = asyncHandler(async (req, res) => {
     // Get GitHub user profile
     const githubResponse = await axios.get(user.github.url, config);
 
-    console.log(githubResponse.data);
-
     const {
       repos_url,
       events_url,
