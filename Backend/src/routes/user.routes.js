@@ -1,12 +1,15 @@
 import { Router } from "express";
 import {
   getCurrentUser,
+  github,
+  githubCallback,
   loginUser,
   logoutUser,
   refreshAccessAndRefreshToken,
   registerUser,
 } from "../controllers/user.controller.js";
 import { verifyJWT } from "../middlewares/auth.middleware.js";
+import "../strategies/github.strategy.js";
 
 const router = Router();
 
@@ -15,5 +18,7 @@ router.route("/login").post(loginUser);
 router.route("/logout").post(verifyJWT, logoutUser);
 router.route("/refresh-token").post(refreshAccessAndRefreshToken);
 router.route("/current_user").post(verifyJWT, getCurrentUser);
+router.get("/github", github);
+router.get("/github/callback", githubCallback);
 
 export default router;

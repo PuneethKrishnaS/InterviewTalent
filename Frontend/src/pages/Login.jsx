@@ -176,7 +176,13 @@ export default function Login() {
                 <button className="flex items-center justify-center gap-2 border-2 rounded-md p-2 w-full">
                   <Chrome /> Google
                 </button>
-                <button className="flex items-center justify-center gap-2 border-2 rounded-md p-2 w-full">
+                <button
+                  className="flex items-center justify-center gap-2 border-2 rounded-md p-2 w-full"
+                  onClick={() =>
+                    (window.location.href =
+                      "http://localhost:8000/api/v1/users/auth/github")
+                  }
+                >
                   <Github /> GitHub
                 </button>
               </div>

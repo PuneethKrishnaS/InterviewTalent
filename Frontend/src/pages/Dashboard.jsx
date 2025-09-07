@@ -18,12 +18,24 @@ import {
   Calculator,
   Trophy,
   Lightbulb,
-  Activity,
 } from "lucide-react";
 
 import { useNavigate } from "react-router-dom";
 import { useContext } from "react";
 import { AuthContext } from "../components/context/AuthContext";
+
+// Illustrations - make sure these paths are correct in your project
+import voiceConvoImage from "../assets/voice_convo_illustration.png";
+import leetCodeIllustration from "../assets/leetcode_illustration.png"; // Example: coding desk, problems
+import githubIllustration from "../assets/github_illustration.png"; // Example: github octocat, code commits
+import interviewsMetricIllustration from "../assets/interviews_metric_illustration.png"; // Example: person talking to bot
+import resumeMetricIllustration from "../assets/resume_metric_illustration.png"; // Example: resume document
+import skillsMetricIllustration from "../assets/skills_metric_illustration.png"; // Example: dartboard, target
+import interviewActionIllustration from "../assets/interview_action_illustration.png"; // Example: person with mic
+import resumeActionIllustration from "../assets/resume_action_illustration.png"; // Example: person editing resume
+import aptitudeActionIllustration from "../assets/aptitude_action_illustration.png"; // Example: person taking test
+import groupDiscussionActionIllustration from "../assets/group_discussion_action_illustration.png"; // Example: group talking
+import insightsIllustration from "../assets/insights_illustration.png"; // Example: person with lightbulb
 
 export default function Dashboard() {
   const { user } = useContext(AuthContext);
@@ -40,9 +52,8 @@ export default function Dashboard() {
       id: 1,
       title: "Interviews Completed",
       value: stats.interviewsTaken,
-      icon: MessageCircle,
+      illustration: interviewsMetricIllustration, // Illustration added
       iconBg: "bg-blue-100 dark:bg-blue-900/20",
-      iconColor: "text-blue-600 dark:text-blue-400",
       footerText: "+3 this week.",
       footerIcon: TrendingUp,
       footerIconColor: "text-green-500",
@@ -51,45 +62,36 @@ export default function Dashboard() {
       id: 2,
       title: "Resume Score",
       value: `${stats.resumeScore}%`,
-      icon: FileText,
+      illustration: resumeMetricIllustration, // Illustration added
       iconBg: "bg-green-100 dark:bg-green-900/20",
-      iconColor: "text-green-600 dark:text-green-400",
       footerText: "Excellent rating.",
     },
     {
       id: 3,
       title: "Skills Improved",
       value: stats.skillsImproved,
-      icon: Target,
+      illustration: skillsMetricIllustration, // Illustration added
       iconBg: "bg-purple-100 dark:bg-purple-900/20",
-      iconColor: "text-purple-600 dark:text-purple-400",
       footerText: "Key areas this month.",
     },
   ]);
 
-  const [recentActivity] = useState([
+  const developerIntegrations = [
     {
-      id: 1,
-      type: "interview",
-      title: "React Interview Practice",
-      date: "2 hours ago",
-      score: 92,
+      title: "LeetCode Stats",
+      icon: Code,
+      color: "text-yellow-600 dark:text-yellow-400",
+      path: "/leetcode-profile",
+      illustration: leetCodeIllustration, // Illustration added
     },
     {
-      id: 2,
-      type: "resume",
-      title: "Resume Optimization Complete",
-      date: "1 day ago",
-      score: 88,
+      title: "GitHub Activity",
+      icon: Github,
+      color: "text-foreground",
+      path: "/github-profile",
+      illustration: githubIllustration, // Illustration added
     },
-    {
-      id: 3,
-      type: "aptitude",
-      title: "Aptitude Test: Quantitative",
-      date: "2 days ago",
-      score: 78,
-    },
-  ]);
+  ];
 
   const explorePracticeActions = [
     {
@@ -98,6 +100,7 @@ export default function Dashboard() {
       icon: MessageCircle,
       color: "text-blue-600 dark:text-blue-400",
       path: "/interview",
+      illustration: interviewActionIllustration,
     },
     {
       title: "Resume Builder",
@@ -105,30 +108,33 @@ export default function Dashboard() {
       icon: FileText,
       color: "text-green-600 dark:text-green-400",
       path: "/resume",
+      illustration: resumeActionIllustration,
     },
     {
-      title: "Aptitude Test", // Changed title
+      title: "Aptitude Test",
       description: "AI-generated tests to sharpen your skills.",
       icon: Calculator,
       color: "text-purple-600 dark:text-purple-400",
       path: "/aptitude",
+      illustration: aptitudeActionIllustration,
     },
     {
-      title: "Group Discussion", // New action
+      title: "Group Discussion",
       description: "Hone your communication and leadership skills.",
-      icon: Users, // Changed icon from UserCheck to Users as requested in initial prompt
+      icon: Users,
       color: "text-orange-600 dark:text-orange-400",
       path: "/group-discussion",
+      illustration: groupDiscussionActionIllustration,
     },
   ];
 
   return (
     <div>
       <MainNavbar />
-      <div className="w-full">
+      <div className="w-full bg-background min-h-screen">
         <div className="container mx-auto lg:px-8 px-5 py-22">
           {/* Welcome Section & Developer Integrations */}
-          <div className="mb-12 border-b border-border pb-8 flex flex-col lg:flex-row lg:items-start lg:justify-between ">
+          <div className="mb-12 border-b border-border pb-8 flex flex-col lg:flex-row lg:items-center lg:justify-between ">
             <div className="flex-1">
               <h1 className="text-4xl lg:text-5xl font-bold text-foreground mb-3 leading-tight">
                 Welcome back,{" "}
@@ -140,82 +146,60 @@ export default function Dashboard() {
                 Your personalized dashboard to career growth and excellence.
               </p>
             </div>
-            {/* Developer Integrations - Not in card, simple list */}
-            <div>
-              {" "}
-              {/* Adjust width as needed */}
-              <h2 className="text-xl font-semibold text-foreground mb-4 flex items-center gap-2">
-                <Code className="w-5 h-5 text-blue-700 dark:text-blue-400" />
-                Developer Integrations
-              </h2>
-              <div className="space-y-3 md:flex md:flex-row md:gap-5 ">
-                <Button
-                  variant="outline"
-                  className="w-full md:w-fit justify-between hover:bg-muted/50 transition-colors border-border"
-                  onClick={() => navigate("/leetcode-profile")}
+            {/* Developer Integrations Cards - Redesigned */}
+            <div className="mt-8 lg:mt-0 grid grid-cols-1 md:grid-cols-2 gap-4 w-full md:w-auto">
+              <h2 className="sr-only">Developer Integrations</h2>{" "}
+              {/* Screen reader only title */}
+              {developerIntegrations.map((integration, index) => (
+                <Card
+                  key={index}
+                  className="group cursor-pointer hover:shadow-lg transition-shadow duration-300 border border-border bg-card dark:bg-card-dark relative overflow-hidden flex flex-col justify-between items-start p-6"
+                  onClick={() => navigate(integration.path)}
                 >
-                  <div className="flex items-center">
-                    <div className="p-2 rounded-md mr-3">
-                      <Code className="w-5 h-5 text-yellow-600 dark:text-yellow-400" />
-                    </div>
-                    <span className="font-medium text-foreground">
-                      LeetCode Stats
-                    </span>
+                  <div className="relative z-10">
+                    <h3 className="text-xl font-semibold text-foreground mb-1">
+                      {integration.title}
+                    </h3>
+                    <p className="text-sm text-muted-foreground">
+                      Track and showcase your coding journey.
+                    </p>
                   </div>
-                  <ChevronRight className="w-4 h-4 text-muted-foreground" />
-                </Button>
-                <Button
-                  variant="outline"
-                  className="w-full md:w-fit justify-between hover:bg-muted/50 transition-colors border-border"
-                  onClick={() => navigate("/github-profile")}
-                >
-                  <div className="flex items-center">
-                    <div className="p-2 rounded-md mr-3">
-                      <Github className="w-5 h-5 text-muted-foreground" />
-                    </div>
-                    <span className="font-medium text-foreground">
-                      GitHub Activity
-                    </span>
+                  <div className="absolute bottom-0 right-0 w-28 h-28 opacity-70 group-hover:opacity-100 transition-opacity duration-300 translate-x-1/4 translate-y-1/4">
+                    <img
+                      src={integration.illustration}
+                      alt={`${integration.title} illustration`}
+                      className="w-full h-full object-contain"
+                    />
                   </div>
-                  <ChevronRight className="w-4 h-4 text-muted-foreground" />
-                </Button>
-              </div>
+                  <ChevronRight className="absolute top-4 right-4 w-5 h-5 text-muted-foreground group-hover:translate-x-1 transition-transform z-10" />
+                </Card>
+              ))}
             </div>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {" "}
             <div className="lg:col-span-2 space-y-10">
-              {/* Your Performance Metrics */}
+              {/* Your Performance Metrics - Redesigned */}
               <section>
                 <h2 className="text-2xl font-semibold text-foreground mb-6 flex items-center gap-3">
                   <BarChart3 className="w-6 h-6 text-green-700 dark:text-green-400" />
                   Your Performance Metrics
                 </h2>
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                   {performanceMetrics.map((metric) => (
                     <Card
                       key={metric.id}
-                      className="hover:shadow-lg transition-shadow duration-300 border border-border"
+                      className="group hover:shadow-lg transition-shadow duration-300 border border-border bg-card dark:bg-card-dark relative overflow-hidden p-6 flex flex-col justify-between"
                     >
-                      <CardContent>
-                        <div className="flex items-center justify-between mb-4">
-                          <div>
-                            <p className="text-sm font-medium text-muted-foreground mb-1">
-                              {metric.title}
-                            </p>
-                            <p className="text-4xl font-bold text-foreground">
-                              {metric.value}
-                            </p>
-                          </div>
-                          <div className={`p-3 ${metric.iconBg} rounded-lg`}>
-                            <metric.icon
-                              className={`w-6 h-6 ${metric.iconColor}`}
-                            />
-                          </div>
-                        </div>
+                      <div className="relative z-10">
+                        <p className="text-sm font-medium text-muted-foreground mb-1">
+                          {metric.title}
+                        </p>
+                        <p className="text-4xl font-bold text-foreground">
+                          {metric.value}
+                        </p>
                         {metric.footerText && (
-                          <p className="text-xs text-muted-foreground flex items-center">
+                          <p className="text-xs text-muted-foreground flex items-center mt-2">
                             {metric.footerIcon && (
                               <metric.footerIcon
                                 className={`w-3 h-3 mr-1 ${metric.footerIconColor}`}
@@ -224,43 +208,54 @@ export default function Dashboard() {
                             {metric.footerText}
                           </p>
                         )}
-                      </CardContent>
+                      </div>
+                      <div className="absolute bottom-0 right-0 w-28 h-28 opacity-70 group-hover:opacity-100 transition-opacity duration-300 translate-x-1/4 translate-y-1/4">
+                        <img
+                          src={metric.illustration}
+                          alt={`${metric.title} illustration`}
+                          className="w-full h-full object-contain"
+                        />
+                      </div>
                     </Card>
                   ))}
                 </div>
               </section>
 
-              {/* Explore & Practice */}
+              {/* Explore & Practice - Redesigned */}
               <section>
                 <h2 className="text-2xl font-semibold text-foreground mb-6 flex items-center gap-3">
                   <Play className="w-6 h-6 text-blue-700 dark:text-blue-400" />
                   Explore & Practice
                 </h2>
-                <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                  {" "}
-                  {/* Adjusted for 4 columns if space allows, otherwise 2 */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                   {explorePracticeActions.map((action, index) => (
                     <Card
                       key={index}
-                      className={`group cursor-pointer hover:shadow-lg transition-shadow duration-300 border border-border`}
+                      className={`group cursor-pointer hover:shadow-lg transition-shadow duration-300 border border-border bg-card dark:bg-card-dark relative overflow-hidden flex flex-col justify-between p-6`}
                       onClick={() => navigate(action.path)}
                     >
-                      <CardContent className=" flex flex-col items-start">
-                        <div
-                          className={`w-12 h-12 rounded-lg bg-muted/60 flex items-center justify-center mb-4 transition-transform duration-200`}
-                        >
-                          <action.icon className={`w-6 h-6 ${action.color}`} />
-                        </div>
-                        <h3 className="text-lg font-semibold text-foreground mb-2">
+                      <div className="relative z-10">
+                        <h3 className="text-xl font-semibold text-foreground mb-1">
                           {action.title}
                         </h3>
                         <p className="text-sm text-muted-foreground leading-snug">
                           {action.description}
                         </p>
-                        <div className="mt-4 text-primary flex  text-center items-center group-hover:underline ">
-                          Launch <ChevronRight className="ml-1 w-3 h-3" />
-                        </div>
-                      </CardContent>
+                      </div>
+                      <div className="absolute bottom-0 right-0 w-28 h-28 opacity-70 group-hover:opacity-100 transition-opacity duration-300 translate-x-1/4 translate-y-1/4">
+                        <img
+                          src={action.illustration}
+                          alt={`${action.title} illustration`}
+                          className="w-full h-full object-contain"
+                        />
+                      </div>
+                      <Button
+                        variant="ghost"
+                        className="w-full mt-4 text-primary flex items-center justify-start p-0 h-auto hover:bg-transparent hover:underline relative z-10"
+                      >
+                        Launch
+                        <ChevronRight className="ml-1 w-4 h-4" />
+                      </Button>
                     </Card>
                   ))}
                 </div>
@@ -268,102 +263,68 @@ export default function Dashboard() {
             </div>
             {/* Right Sidebar - Right 1/3 */}
             <div className="lg:col-span-1 space-y-6">
-              {/* Recent Activity - Streamlined */}
-
-              {/* Insights & Tips */}
+              {/* Insights & Tips - Redesigned */}
               <section>
-                <Card className="shadow-sm border border-border">
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2 text-foreground">
+                <Card className="shadow-sm border border-border bg-card dark:bg-card-dark relative overflow-hidden p-6 flex flex-col justify-between group">
+                  <div className="relative z-10">
+                    <CardTitle className="flex items-center gap-2 text-foreground mb-2">
                       <Lightbulb className="w-5 h-5 text-orange-700 dark:text-orange-400" />
                       Insights & Tips
                     </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
                     <p className="text-sm text-muted-foreground">
                       Discover personalized insights and expert tips to boost
                       your career preparation.
                     </p>
-                    <Button
-                      variant="outline"
-                      className="w-full text-primary hover:bg-muted/50 border-border"
-                    >
-                      Explore Tips <ChevronRight className="ml-2 w-4 h-4" />
-                    </Button>
-                  </CardContent>
+                  </div>
+                  <div className="absolute bottom-0 right-0 w-36 h-36 opacity-70 group-hover:opacity-100 transition-opacity duration-300 translate-x-1/4 translate-y-1/4">
+                    <img
+                      src={insightsIllustration}
+                      alt="Insights & Tips illustration"
+                      className="w-full h-full object-contain"
+                    />
+                  </div>
+                  <Button
+                    variant="outline"
+                    className="w-full mt-6 text-primary hover:bg-muted/50 border-border relative z-10"
+                  >
+                    Explore Tips <ChevronRight className="ml-2 w-4 h-4" />
+                  </Button>
                 </Card>
               </section>
 
+              {/* New Voice Conversation Mock Interview Section - Retained unique style */}
               <section>
-                <Card className="shadow-sm border border-border">
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2 text-foreground">
-                      <Activity className="w-5 h-5 text-muted-foreground" />
-                      Recent Activity
+                <Card className="shadow-sm border border-border bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 dark:from-slate-800 dark:via-purple-950/20 dark:to-blue-950/20 relative overflow-hidden">
+                  <div className="absolute top-0 right-0 p-2">
+                    <Badge
+                      variant="secondary"
+                      className="bg-purple-500 text-white dark:bg-purple-400 dark:text-gray-900 font-semibold text-xs animate-pulse"
+                    >
+                      NEW
+                    </Badge>
+                  </div>
+                  <CardContent className="pw-6 text-center flex flex-col items-center">
+
+                    <CardTitle className="text-xl font-bold text-foreground">
+                      Voice Interview
                     </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-4">
-                      {recentActivity.map((item) => (
-                        <div
-                          key={item.id}
-                          className="flex items-center justify-between p-2 bg-background border border-border rounded-lg hover:bg-muted/50 transition-colors"
-                        >
-                          <div className="flex items-center space-x-4">
-                            <div
-                              className={`p-2 rounded-md ${
-                                item.type === "interview"
-                                  ? "bg-blue-50 dark:bg-blue-900/10"
-                                  : item.type === "resume"
-                                  ? "bg-green-50 dark:bg-green-900/10"
-                                  : item.type === "aptitude"
-                                  ? "bg-purple-50 dark:bg-purple-900/10"
-                                  : "bg-yellow-50 dark:bg-yellow-900/10"
-                              }`}
-                            >
-                              {item.type === "interview" && (
-                                <MessageCircle className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-                              )}
-                              {item.type === "resume" && (
-                                <FileText className="w-5 h-5 text-green-600 dark:text-green-400" />
-                              )}
-                              {item.type === "aptitude" && (
-                                <Calculator className="w-5 h-5 text-purple-600 dark:text-purple-400" />
-                              )}
-                              {item.type === "badge" && (
-                                <Trophy className="w-5 h-5 text-yellow-600 dark:text-yellow-400" />
-                              )}
-                            </div>
-                            <div>
-                              <p className="font-medium text-foreground">
-                                {item.title}
-                              </p>
-                              <p className="text-sm text-muted-foreground mt-1">
-                                {item.date}
-                              </p>
-                            </div>
-                          </div>
-                          {item.score && (
-                            <Badge
-                              className={`text-sm px-3 py-1 font-semibold border-none ${
-                                item.score >= 90
-                                  ? "bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300"
-                                  : item.score >= 80
-                                  ? "bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300"
-                                  : "bg-orange-100 text-orange-700 dark:bg-orange-900/50 dark:text-orange-300"
-                              }`}
-                            >
-                              {item.score}%
-                            </Badge>
-                          )}
-                          {!item.score && item.type === "badge" && (
-                            <Badge className="bg-yellow-100 text-yellow-700 dark:bg-yellow-900/50 dark:text-yellow-300 text-sm px-3 py-1 font-semibold border-none">
-                              New Badge
-                            </Badge>
-                          )}
-                        </div>
-                      ))}
+                    <p className="text-sm text-muted-foreground mt-2 max-w-sm">
+                      Experience a fully interactive, voice-driven mock
+                      interview with our advanced AI.
+                    </p>
+                    <div className="w-2/4 max-w-xs mt-6">
+                      <img
+                        src={voiceConvoImage}
+                        alt="Voice conversation mock interview illustration"
+                        className="w-full h-auto mx-auto object-contain"
+                      />
                     </div>
+                    <Button
+                      className="w-full mt-6 bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 transition-colors"
+                      onClick={() => navigate("/voice-interview")}
+                    >
+                      Start Your Voice Interview
+                    </Button>
                   </CardContent>
                 </Card>
               </section>

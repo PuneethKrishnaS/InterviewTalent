@@ -4,6 +4,7 @@ import { appError } from "../utils/appError.js";
 import { appResponse } from "../utils/appResponse.js";
 import { userSignupValidater } from "../validators/user.validators.js";
 import jwt from "jsonwebtoken";
+import passport from "passport";
 
 const generateAccessAndRefreshToken = async (user_id) => {
   const user = await User.findById(user_id);
@@ -143,14 +144,9 @@ const loginUser = asyncHandler(async (req, res) => {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: process.env.NODE_ENV === "production" ? "none" : "strict",
-      maxAge: 24 * 60 * 60 * 1000,
+      maxAge: 7 * 24 * 60 * 60 * 1000,
     })
-    .cookie("refreshToken", refreshToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: process.env.NODE_ENV === "production" ? "none" : "strict",
-      maxAge: 30 * 24 * 60 * 60 * 1000,
-    })
+
     .json(
       new appResponse(
         200,
@@ -177,6 +173,46 @@ const logoutUser = asyncHandler(async (req, res) => {
     .json(new appResponse(200, {}, "User Logged Out"));
 });
 
+const github = passport.authenticate("github", {
+  scope: ["user:email"],
+  session: false,
+});
+
+const githubCallback = (req, res, next) => {
+  passport.authenticate(
+    "github",
+    { failureRedirect: "/login", session: false },
+    async (err, user) => {
+      if (err || !user) {
+        return res.redirect("http://localhost:5173/login");
+      }
+
+      try {
+        const { accessToken, refreshToken } =
+          await generateAccessAndRefreshToken(user._id);
+
+        res
+          .status(200)
+          .cookie("accessToken", accessToken, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === "production",
+            sameSite: process.env.NODE_ENV === "production" ? "none" : "strict",
+            maxAge: 7 * 24 * 60 * 60 * 1000,
+          })
+          .cookie("refreshToken", refreshToken, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === "production",
+            sameSite: process.env.NODE_ENV === "production" ? "none" : "strict",
+            maxAge: 30 * 24 * 60 * 60 * 1000,
+          })
+          .redirect("http://localhost:5173/dashboard");
+      } catch (error) {
+        next(error);
+      }
+    }
+  )(req, res, next);
+};
+
 const getCurrentUser = asyncHandler(async (req, res) => {
   res
     .status(200)
@@ -189,4 +225,7 @@ export {
   logoutUser,
   refreshAccessAndRefreshToken,
   getCurrentUser,
+  generateAccessAndRefreshToken,
+  githubCallback,
+  github,
 };

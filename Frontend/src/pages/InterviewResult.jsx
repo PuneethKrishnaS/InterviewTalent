@@ -47,7 +47,7 @@ export default function InterviewResult() {
       <div className="w-full">
         <div className="container mx-auto lg:px-8 px-5 py-22">
           {/* Top nav */}
-          <nav className="flex justify-between items-center mb-8">
+          <nav className="flex justify-between items-center mt-8 mb-8">
             <Button
               variant={"link"}
               onClick={() => navigate("/dashboard")}

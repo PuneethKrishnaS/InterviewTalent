@@ -217,7 +217,7 @@ export default function InterviewSection() {
       <MainNavbar />
       <div className="container mx-auto px-5 lg:px-8 py-8">
         {/* Top nav */}
-        <div className="flex justify-between items-center mb-8">
+        <div className="flex justify-between items-center mt-8 mb-8">
           <Button variant="link" onClick={() => navigate("/dashboard")}>
             <ArrowLeftCircle className="mr-2" /> Exit Interview
           </Button>
@@ -230,7 +230,6 @@ export default function InterviewSection() {
             </p>
           </div>
         </div>
-        <hr />
         {/* Main content */}
         <section className="grid grid-cols-1 lg:grid-cols-12 gap-8">
           {/* Left */}

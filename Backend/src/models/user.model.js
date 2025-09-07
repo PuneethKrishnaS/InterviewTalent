@@ -19,7 +19,17 @@ const userSchema = new mongoose.Schema(
     email: {
       type: String,
       unique: true,
-      required: [true, "Email is required"],
+      required: [
+        function () {
+          return !(
+            this.isloggedInFromSocialLinks &&
+            (this.isloggedInFromSocialLinks.fromGithub ||
+              this.isloggedInFromSocialLinks.fromGoogle)
+          );
+        },
+        ,
+        "Email is required",
+      ],
       match: [/.+\@.+\..+/, "Please enter a valid email address"],
       trim: true,
       lowercase: true,
@@ -28,7 +38,11 @@ const userSchema = new mongoose.Schema(
       type: String,
       required: [
         function () {
-          return !this.isGoogleLinked || !this.isGithubLinked ? true : false;
+          return !(
+            this.isloggedInFromSocialLinks &&
+            (this.isloggedInFromSocialLinks.fromGithub ||
+              this.isloggedInFromSocialLinks.fromGoogle)
+          );
         },
         "Password is required",
       ],
@@ -41,16 +55,49 @@ const userSchema = new mongoose.Schema(
       default: null,
     },
 
-    isGoogleLinked: {
-      type: Boolean,
-      default: false,
-    },
-    isGithubLinked: {
-      type: Boolean,
-      default: false,
+    isloggedInFromSocialLinks: {
+      fromGithub: {
+        type: Boolean,
+        default: false,
+      },
+
+      fromGoogle: {
+        type: Boolean,
+        default: false,
+      },
     },
 
-    profileImage: String, //cloud URL
+    profileImage: String,
+
+    github: {
+      isConnected: {
+        type: Boolean,
+        default: false,
+      },
+
+      username: {
+        type: String,
+      },
+
+      email: {
+        type: String,
+        match: [/.+\@.+\..+/, "Please enter a valid email address"],
+        trim: true,
+        lowercase: true,
+      },
+
+      githubId: {
+        type: Number,
+      },
+
+      url: {
+        type: String,
+      },
+
+      accessToken: {
+        type: String,
+      },
+    },
 
     performanceMetrics: {
       interviewsCompleted: {
@@ -73,7 +120,9 @@ const userSchema = new mongoose.Schema(
 );
 
 userSchema.pre("save", async function (next) {
-  if (!this.isModified("password")) return next();
+  if (!this.isModified("password") || !this.password) {
+    return next();
+  }
 
   try {
     this.password = await bcrypt.hash(this.password, 10);

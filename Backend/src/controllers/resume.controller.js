@@ -268,7 +268,6 @@ const resumeFixEverythingAI = async (userPrompt, resume, res) => {
         },
       ],
     });
-    console.log(response);
 
     res
       .status(200)
@@ -281,7 +280,6 @@ const resumeFixEverythingAI = async (userPrompt, resume, res) => {
 const getAIResumeATS = asyncHandler(async (req, res) => {
   try {
     const { sectionName, sectionData, resume, userPrompt } = req.body;
-    console.log(sectionData);
 
     switch (sectionName) {
       case "Summary":

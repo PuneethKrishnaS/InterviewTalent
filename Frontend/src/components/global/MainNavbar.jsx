@@ -11,10 +11,15 @@ import {
 import { LogOut, Settings, User } from "lucide-react";
 import { AuthContext } from "../context/AuthContext";
 import { useContext } from "react";
+import SettingsDialog from "../pages/settings/SettingDialog";
 export default function MainNavbar() {
   const { user, logout } = useContext(AuthContext);
 
-  const badgeName = user.userName.first[0] + user.userName.last?.[0];
+  const badgeName =
+    user.profileImage ||
+    `https://placehold.co/30x30/2f2f2f/FFFFFF?text=${
+      user.userName.first[0] + user.userName.last?.[0]
+    }`;
 
   return (
     <div className="w-full z-10  fixed top-0 backdrop-blur-3xl border-b ">
@@ -37,16 +42,13 @@ export default function MainNavbar() {
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem className={"flex gap-2"}>
-              <User /> Profile
-            </DropdownMenuItem>
-            <DropdownMenuItem>
-              <Settings /> Settings
-            </DropdownMenuItem>
-            <DropdownMenuItem >
-              <div className={"flex gap-2"} onClick={logout}>
+            <SettingsDialog>
+              <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                <Settings /> Settings
+              </DropdownMenuItem>
+            </SettingsDialog>
+            <DropdownMenuItem className={"flex gap-2"}  onClick={logout}>
                 <LogOut /> Log out
-              </div>
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

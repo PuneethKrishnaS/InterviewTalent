@@ -57,7 +57,7 @@ export default function Hero() {
         </Link>
         <div className="my-8">
           <img
-            src="src\assets\image.png"
+            src="src/assets/image.png"
             alt="InterviewTalent Hero"
             className="rounded-xl shadow-2xl  "
           />
