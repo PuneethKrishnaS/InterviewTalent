@@ -11,4 +11,12 @@ export default defineConfig({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  build: {
+    rollupOptions: {
+      external: ['@vladmandic/face-api', '@tensorflow/tfjs'] 
+    }
+  },
+  optimizeDeps: {
+    include: ['@tensorflow/tfjs', '@vladmandic/face-api']
+  }
 })

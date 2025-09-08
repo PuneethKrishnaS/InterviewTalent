@@ -17,7 +17,6 @@ passport.use(
     async (accessToken, refreshToken, profile, done) => {
       try {
         const email = profile.emails && profile.emails[0]?.value;
-        console.log(profile);
 
         if (!email) {
           return done(new Error("No email from GitHub"), null);
