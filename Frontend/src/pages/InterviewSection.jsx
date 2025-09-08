@@ -16,13 +16,15 @@ import {
   StopCircle,
   CheckCircle,
   Lightbulb,
+  StepBack,
 } from "lucide-react";
 import { useEffect, useState, useRef } from "react";
 import SpeechRecognition, {
   useSpeechRecognition,
 } from "react-speech-recognition";
 import { interviewStore } from "../components/store/InterviewStore";
-import * as faceapi from "face-api.js";
+import * as faceapi from "@vladmandic/face-api"; // Updated import to maintained fork
+import * as tf from "@tensorflow/tfjs"; // Explicit tfjs import for backend control
 
 export default function InterviewSection() {
   const [isRecording, setIsRecording] = useState(false);
@@ -30,6 +32,8 @@ export default function InterviewSection() {
   const [timer, setTimer] = useState(180);
   const [faceExpressions, setFaceExpressions] = useState(null);
   const [modelsLoaded, setModelsLoaded] = useState(false);
+  const [loadingError, setLoadingError] = useState(null);
+  const navigate = useNavigate();
 
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
@@ -44,7 +48,7 @@ export default function InterviewSection() {
     loading,
   } = interviewStore();
   const interviewQuestions = questions;
-  const currentQuestion = interviewQuestions[currentQuestionIndex];
+  const currentQuestion = interviewQuestions?.[currentQuestionIndex];
 
   const {
     transcript,
@@ -53,25 +57,77 @@ export default function InterviewSection() {
     browserSupportsSpeechRecognition,
   } = useSpeechRecognition();
 
-  const navigate = useNavigate();
+  if (!questions || questions.length === 0) {
+    return (
+      <div className="bg-background min-h-screen text-foreground font-inter">
+        <MainNavbar />
+        <div className="container mx-auto px-5 py-8 md:py-12 flex flex-col items-center justify-center min-h-[calc(100vh-8rem)]">
+          <div className="text-center">
+            <h1 className="text-2xl font-bold mb-4">
+              Can not access this route
+            </h1>
+            <p className="text-muted-foreground mb-6">
+              Enter details then mock interview will start!
+            </p>
+            <Button
+              onClick={() => navigate("/interview")}
+              className="bg-secondary hover:bg-secondary/80 text-secondary-foreground"
+            >
+              <StepBack />
+              Go back
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
-  // Unified effect for loading models, starting camera, and detection
+  // Load models only once on mount
   useEffect(() => {
-    const loadModelsAndStartCamera = async () => {
+    const loadModels = async () => {
       const MODEL_URL = "/models";
       try {
-        await faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL);
-        await faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL);
-        await faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL);
-        await faceapi.nets.faceExpressionNet.loadFromUri(MODEL_URL);
-        setModelsLoaded(true);
+        await tf.setBackend("webgl");
+        await tf.ready();
 
-        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-        if (videoRef.current) {
-          videoRef.current.srcObject = stream;
+        await Promise.all([
+          faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL),
+          faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL),
+          faceapi.nets.faceExpressionNet.loadFromUri(MODEL_URL),
+        ]);
+        setModelsLoaded(true);
+        setLoadingError(null);
+      } catch (error) {
+        console.error("Failed to load face-api models:", error);
+        setLoadingError(
+          "Failed to load face detection models. Please check if model files are in /public/models/ and the server is serving them correctly."
+        );
+      }
+    };
+
+    loadModels();
+  }, []);
+
+  // Start camera and detection when models are loaded
+  useEffect(() => {
+    if (!modelsLoaded || loadingError) return;
+
+    const startCameraAndDetection = async () => {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: true,
+        });
+        const video = videoRef.current;
+        if (video) {
+          // Wait for video to load metadata before adding listener
+          video.addEventListener("loadedmetadata", () => {
+            video.addEventListener("play", startDetection);
+          });
+          video.srcObject = stream;
         }
       } catch (error) {
-        console.error("Failed to load face-api models or camera:", error);
+        console.error("Failed to access camera:", error);
+        setLoadingError("Camera access denied or unavailable.");
       }
     };
 
@@ -80,58 +136,86 @@ export default function InterviewSection() {
       const canvas = canvasRef.current;
       if (!video || !canvas || video.paused || video.ended) return;
 
-      const displaySize = { width: video.videoWidth, height: video.videoHeight };
+      // Match dimensions only after video is ready
+      if (video.videoWidth === 0 || video.videoHeight === 0) {
+        console.warn("Video not ready yet, skipping detection");
+        return;
+      }
+
+      const displaySize = {
+        width: video.videoWidth,
+        height: video.videoHeight,
+      };
       faceapi.matchDimensions(canvas, displaySize);
 
+      // Clear any existing interval
+      if (detectionIntervalRef.current) {
+        clearInterval(detectionIntervalRef.current);
+      }
+
+      // Increased interval to 250ms for stability (reduces rapid errors)
       detectionIntervalRef.current = setInterval(async () => {
-        const detections = await faceapi
-          .detectAllFaces(video, new faceapi.TinyFaceDetectorOptions())
-          .withFaceLandmarks()
-          .withFaceExpressions();
+        try {
+          // Skip if video not ready
+          if (
+            video.videoWidth === 0 ||
+            video.videoHeight === 0 ||
+            !modelsLoaded
+          )
+            return;
 
-        const resizedDetections = faceapi.resizeResults(detections, displaySize);
-        const ctx = canvas.getContext("2d");
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        
-        faceapi.draw.drawDetections(canvas, resizedDetections);
-        faceapi.draw.drawFaceExpressions(canvas, resizedDetections);
+          const detections = await faceapi
+            .detectAllFaces(video, new faceapi.TinyFaceDetectorOptions())
+            .withFaceLandmarks()
+            .withFaceExpressions();
 
-        if (detections.length > 0) {
-          const expressions = detections[0].expressions;
-          const sortedExpressions = Object.entries(expressions).sort(
-            (a, b) => b[1] - a[1]
+          const resizedDetections = faceapi.resizeResults(
+            detections,
+            displaySize
           );
-          setFaceExpressions(sortedExpressions[0]);
-        } else {
-          setFaceExpressions(null);
+          const ctx = canvas.getContext("2d");
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+          faceapi.draw.drawDetections(canvas, resizedDetections);
+          faceapi.draw.drawFaceExpressions(canvas, resizedDetections);
+
+          if (detections.length > 0) {
+            const expressions = detections[0].expressions;
+            const sortedExpressions = Object.entries(expressions).sort(
+              (a, b) => b[1] - a[1]
+            );
+            setFaceExpressions(sortedExpressions[0]);
+          } else {
+            setFaceExpressions(null);
+          }
+        } catch (error) {
+          console.error("Detection error:", error); // Catch and log without crashing
+          // Optionally stop interval on repeated errors
         }
-      }, 100);
+      }, 250); // Reduced frequency
     };
 
-    if (modelsLoaded) {
-      const currentVideoRef = videoRef.current;
-      if (currentVideoRef) {
-        currentVideoRef.addEventListener("play", startDetection);
-      }
-    } else {
-      loadModelsAndStartCamera();
-    }
+    startCameraAndDetection();
 
+    // Cleanup function
     return () => {
       if (detectionIntervalRef.current) {
         clearInterval(detectionIntervalRef.current);
       }
-      const currentVideoRef = videoRef.current;
-      if (currentVideoRef) {
-        currentVideoRef.removeEventListener("play", startDetection);
-        if (currentVideoRef.srcObject) {
-          currentVideoRef.srcObject.getTracks().forEach((track) => track.stop());
+      const video = videoRef.current;
+      if (video) {
+        video.removeEventListener("loadedmetadata", startCameraAndDetection);
+        video.removeEventListener("play", startDetection);
+        if (video.srcObject) {
+          video.srcObject.getTracks().forEach((track) => track.stop());
         }
       }
+      // Dispose any lingering tensors (helps with memory/backend issues)
+      tf.disposeVariables();
     };
-  }, [modelsLoaded]);
+  }, [modelsLoaded, loadingError]);
 
-  // Timer logic
+  // Timer logic (unchanged)
   useEffect(() => {
     let interval = null;
     if (isRecording && timer > 0) {
@@ -142,8 +226,9 @@ export default function InterviewSection() {
     return () => clearInterval(interval);
   }, [isRecording, timer]);
 
-  // Actions
+  // Actions (unchanged)
   const handleStartRecording = () => {
+    if (!currentQuestion) return;
     setIsRecording(true);
     resetTranscript();
     SpeechRecognition.startListening({ continuous: true, language: "en-US" });
@@ -158,9 +243,8 @@ export default function InterviewSection() {
   const handleNext = async () => {
     if (currentQuestionIndex < interviewQuestions.length - 1) {
       setCurrentQuestionIndex((prev) => prev + 1);
-      setTimer(currentQuestion.timer);
+      setTimer(interviewQuestions[currentQuestionIndex + 1].timer);
       resetTranscript();
-      
     } else {
       await getFeedback(questions, transcriptsAnswers, details);
       if (loading) {
@@ -216,14 +300,14 @@ export default function InterviewSection() {
     <div>
       <MainNavbar />
       <div className="container mx-auto px-5 lg:px-8 py-8">
-        {/* Top nav */}
+        {/* Top nav (unchanged) */}
         <div className="flex justify-between items-center mt-8 mb-8">
           <Button variant="link" onClick={() => navigate("/dashboard")}>
             <ArrowLeftCircle className="mr-2" /> Exit Interview
           </Button>
           <div className="text-right">
             <h1 className="font-bold text-lg md:text-xl">
-              {details.InterviewType}
+              {details.InterviewType || ""}
             </h1>
             <p className="text-muted-foreground text-sm">
               {details.JobRole} <Badge>{details.duration}</Badge>
@@ -232,7 +316,7 @@ export default function InterviewSection() {
         </div>
         {/* Main content */}
         <section className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-          {/* Left */}
+          {/* Left (unchanged) */}
           <div className="lg:col-span-8 flex flex-col gap-6">
             <Card>
               <CardHeader>
@@ -301,7 +385,10 @@ export default function InterviewSection() {
                     muted
                     className="w-full h-full object-cover"
                   ></video>
-                  <canvas ref={canvasRef} className="absolute top-0 left-0" />
+                  <canvas
+                    ref={canvasRef}
+                    className="absolute top-0 left-0 w-full h-full" // Ensure canvas has full size
+                  />
                 </div>
               </CardContent>
             </Card>
@@ -314,17 +401,20 @@ export default function InterviewSection() {
                 <CardDescription>Facial Expression</CardDescription>
               </CardHeader>
               <CardContent>
-                {modelsLoaded ? (
+                {loadingError ? (
+                  <p className="text-sm text-red-600">{loadingError}</p>
+                ) : modelsLoaded ? (
                   faceExpressions ? (
                     <>
                       <p className="text-xl font-bold capitalize mb-2">
                         {faceExpressions[0]}
                       </p>
                       <p className="text-sm text-muted-foreground">
-                        **Confidence:** {(faceExpressions[1] * 100).toFixed(2)}%
+                        <span className="font-bold">Confidence:</span>
+                        {(faceExpressions[1] * 100).toFixed(2)}%
                       </p>
                       <p className="mt-4 text-sm font-semibold">
-                        **Suggestion:**{" "}
+                        <span className="font-bold">Suggestion:</span>
                         <span className="text-muted-foreground font-normal">
                           {getSuggestion(faceExpressions[0])}
                         </span>

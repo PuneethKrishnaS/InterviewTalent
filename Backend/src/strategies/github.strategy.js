@@ -8,7 +8,10 @@ passport.use(
     {
       clientID: process.env.GITHUB_CLIENT_ID,
       clientSecret: process.env.GITHUB_CLIENT_SECRET,
-      callbackURL: "http://localhost:8000/api/v1/users/auth/github/callback",
+      callbackURL:
+        process.env.NODE_ENV === "production"
+          ? "https://interview-talent-5abh.vercel.app/api/v1/users/auth/github/callback"
+          : "http://localhost:8000/api/v1/users/auth/github/callback",
       scope: ["user:email"],
     },
     async (accessToken, refreshToken, profile, done) => {
@@ -41,10 +44,17 @@ passport.use(
             },
           });
         } else {
-          user.isGithubConnected = true;
           if (!user.profileImage) {
             user.profileImage = profile.photos?.[0]?.value;
           }
+          user.github = {
+            isConnected: true,
+            githubId: profile._json.id,
+            url: profile._json.url,
+            username: profile.username,
+            email: email,
+            accessToken: accessToken,
+          };
           await user.save();
         }
 

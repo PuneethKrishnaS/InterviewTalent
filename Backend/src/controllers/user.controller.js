@@ -184,7 +184,11 @@ const githubCallback = (req, res, next) => {
     { failureRedirect: "/login", session: false },
     async (err, user) => {
       if (err || !user) {
-        return res.redirect("http://localhost:5173/login");
+        return res.redirect(
+          process.env.NODE_ENV === "production"
+            ? "https://interview-talent-5abh.vercel.app/login"
+            : "http://localhost:5173/login"
+        );
       }
 
       try {
@@ -205,7 +209,11 @@ const githubCallback = (req, res, next) => {
             sameSite: process.env.NODE_ENV === "production" ? "none" : "strict",
             maxAge: 30 * 24 * 60 * 60 * 1000,
           })
-          .redirect("http://localhost:5173/dashboard");
+          .redirect(
+            process.env.NODE_ENV === "production"
+              ? "https://interview-talent-5abh.vercel.app/dashboard"
+              : "http://localhost:5173/dashboard"
+          );
       } catch (error) {
         next(error);
       }

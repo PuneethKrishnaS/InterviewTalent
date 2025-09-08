@@ -1,11 +1,4 @@
-import {
-  Routes,
-  Route,
-  useNavigate,
-  Navigate,
-  replace,
-  Outlet,
-} from "react-router-dom";
+import { Routes, Route, Navigate } from "react-router-dom";
 import { ThemeProvider } from "./components/context/theme-provider";
 import Index from "./pages/Index";
 import Login from "./pages/Login";
@@ -21,7 +14,8 @@ import { AuthContext } from "./components/context/AuthContext";
 import { useContext } from "react";
 import { useEffect } from "react";
 import NotFound from "./pages/NotFound";
-
+import VoiceInterview from "./pages/VoiceInterview";
+import VoiceCall from "./pages/VoiceCall";
 
 function App() {
   const { getUser, loading, user, checkingAuth, authenticated } =
@@ -132,6 +126,22 @@ function App() {
           element={
             <ProtectedRoute>
               <Resume />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/voice"
+          element={
+            <ProtectedRoute>
+              <VoiceInterview />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/voice/section"
+          element={
+            <ProtectedRoute>
+              <VoiceCall />
             </ProtectedRoute>
           }
         />

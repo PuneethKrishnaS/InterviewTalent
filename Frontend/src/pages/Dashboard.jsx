@@ -320,7 +320,7 @@ export default function Dashboard() {
                     </div>
                     <Button
                       className="w-full mt-6 bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 transition-colors"
-                      onClick={() => navigate("/voice-interview")}
+                      onClick={() => navigate("/voice")}
                     >
                       Start Your Voice Interview
                     </Button>

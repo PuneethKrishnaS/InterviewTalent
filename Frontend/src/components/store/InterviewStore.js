@@ -26,7 +26,6 @@ export const interviewStore = create((set, get) => ({
       });
     } catch (error) {
       set({ error: error.response?.data?.message, loading: false });
-      console.log(error);
     }
   },
 
