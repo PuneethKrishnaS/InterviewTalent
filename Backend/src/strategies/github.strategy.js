@@ -10,7 +10,7 @@ passport.use(
       clientSecret: process.env.GITHUB_CLIENT_SECRET,
       callbackURL:
         process.env.NODE_ENV === "production"
-          ? "https://interview-talent-5abh.vercel.app/api/v1/users/auth/github/callback"
+          ? "https://interviewtalent.onrender.com/api/v1/users/auth/github/callback"
           : "http://localhost:8000/api/v1/users/auth/github/callback",
       scope: ["user:email"],
     },

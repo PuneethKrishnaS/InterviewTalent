@@ -143,7 +143,7 @@ const loginUser = asyncHandler(async (req, res) => {
     .cookie("accessToken", accessToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
-      sameSite: process.env.NODE_ENV === "production" ? "none" : "strict",
+      sameSite: process.env.NODE_ENV === "production" ? "strict" : "none",
       maxAge: 7 * 24 * 60 * 60 * 1000,
     })
 
@@ -153,7 +153,6 @@ const loginUser = asyncHandler(async (req, res) => {
         {
           user: userLogin,
           accessToken,
-          refreshToken,
         },
         "User Login successfully"
       )
@@ -169,7 +168,6 @@ const logoutUser = asyncHandler(async (req, res) => {
   res
     .status(200)
     .clearCookie("accessToken", { httpOnly: true, secure: true })
-    .clearCookie("refreshToken", { httpOnly: true, secure: true })
     .json(new appResponse(200, {}, "User Logged Out"));
 });
 
@@ -202,12 +200,6 @@ const githubCallback = (req, res, next) => {
             secure: process.env.NODE_ENV === "production",
             sameSite: process.env.NODE_ENV === "production" ? "none" : "strict",
             maxAge: 7 * 24 * 60 * 60 * 1000,
-          })
-          .cookie("refreshToken", refreshToken, {
-            httpOnly: true,
-            secure: process.env.NODE_ENV === "production",
-            sameSite: process.env.NODE_ENV === "production" ? "none" : "strict",
-            maxAge: 30 * 24 * 60 * 60 * 1000,
           })
           .redirect(
             process.env.NODE_ENV === "production"
