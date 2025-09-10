@@ -180,7 +180,7 @@ export default function Login() {
                   className="flex items-center justify-center gap-2 border-2 rounded-md p-2 w-full"
                   onClick={() =>
                     (window.location.href =
-                      "http://localhost:8000/api/v1/users/auth/github")
+                      "https://interviewtalent.onrender.com/api/v1/users/auth/github")
                   }
                 >
                   <Github /> GitHub

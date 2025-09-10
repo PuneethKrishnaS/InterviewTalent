@@ -17,14 +17,6 @@ passport.use(
 
     async (accessToken, refreshToken, profile, done) => {
       try {
-        console.log(
-          "GitHubStrategy callbackURL:",
-          process.env.NODE_ENV,
-          process.env.NODE_ENV === "production"
-            ? "https://interviewtalent.onrender.com/api/v1/users/auth/github/callback"
-            : "http://localhost:8000/api/v1/users/auth/github/callback"
-        );
-
         const email = profile.emails && profile.emails[0]?.value;
 
         if (!email) {
