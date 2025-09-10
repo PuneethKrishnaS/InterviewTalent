@@ -65,7 +65,7 @@ export default function Features() {
   ];
 
   return (
-    <section className="min-h-fit py-16 w-full bg-gradient-to-t from-background from-50%  to-purple-400 dark:to-purple-950 dark:from-0%  items-center justify-center flex flex-col ">
+    <section className="min-h-fit py-16 w-full  items-center justify-center flex flex-col ">
       <div className="container m-auto lg:px-8 px-5 items-center justify-center flex flex-col ">
         <div className="text-center leading-tight gap-6 flex flex-col my-8  ">
           <h1 className="md:text-3xl text-2xl xl:text-5xl font-bold text-wrap">

@@ -11,7 +11,7 @@ export default function Header() {
   };
 
   return (
-    <header className="w-full z-10  fixed top-0 backdrop-blur-3xl border-b ">
+    <header className="w-full z-100  fixed top-0 backdrop-blur-3xl border-b ">
       <div className="container mx-auto h-20 lg:px-8 px-5 flex justify-between py-4 items-center">
         <div className="flex gap-2 items-center ">
           <Logo className="w-12" />

@@ -4,7 +4,6 @@ import "./styles.css";
 import { BrowserRouter } from "react-router-dom";
 import { Toaster } from "sonner";
 import { AuthProvider } from "./components/context/AuthContext";
-import { Analytics } from "@vercel/analytics/react"
 
 ReactDOM.createRoot(document.getElementById("root")).render(
   <BrowserRouter>
@@ -12,6 +11,5 @@ ReactDOM.createRoot(document.getElementById("root")).render(
       <App />
     </AuthProvider>
     <Toaster />
-    <Analytics/>
   </BrowserRouter>
 );

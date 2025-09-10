@@ -13,7 +13,7 @@ export default function VoiceCall() {
   const { questions, details } = voiceInterviewStore();
   const { user } = useContext(AuthContext);
 
-  if (!questions ) {
+  if (!questions) {
     return (
       <div className="bg-background min-h-screen text-foreground font-inter">
         <MainNavbar />
@@ -145,6 +145,9 @@ export default function VoiceCall() {
 
     return () => {
       vapi.stop();
+      setAiSpeaking(false);
+      setUserSpeaking(false);
+      setInCall(false);
     };
   }, []);
 
@@ -212,7 +215,7 @@ export default function VoiceCall() {
             <Button
               className={`${"bg-destructive hover:bg-destructive/75"} text-white cursor-pointer`}
               size="lg"
-              onClick={() => stopInterview()}
+              onClick={stopInterview}
             >
               <PhoneOff className="mr-2" />
               {"End Call"}
