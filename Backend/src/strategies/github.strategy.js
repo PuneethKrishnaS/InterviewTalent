@@ -18,7 +18,7 @@ passport.use(
     },
 
     async (req, accessToken, refreshToken, profile, done) => {
-      if (req.user.userId) {
+      if (req.query.userId) {
         let user = await User.findById(req.user.userId);
 
         if (!user) {

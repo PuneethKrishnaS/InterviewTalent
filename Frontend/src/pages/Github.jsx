@@ -94,7 +94,7 @@ export default function Github() {
             </p>
             <Button
               onClick={() =>
-                (window.location.href = `https://interviewtalent.onrender.com/api/v1/users/auth/github?userId=${user._id}`)
+                (window.location.href = `${import.meta.env.VITE_BACKEND_URL}api/v1/users/auth/github?userId=${user._id}`)
               }
               className="bg-secondary hover:bg-secondary/80 text-secondary-foreground"
             >
