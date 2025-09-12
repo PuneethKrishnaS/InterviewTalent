@@ -1,5 +1,5 @@
 import Logo from "../assets/Logo";
-import { Chrome, Eye, EyeOff, Github } from "lucide-react";
+import { Chrome, Eye, EyeOff, Github, Loader2 } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Link, useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader } from "../components/ui/card";
@@ -20,7 +20,7 @@ export default function Login() {
   });
   const [showPassword, setShowPassword] = useState(false);
 
-  const { login } = useContext(AuthContext);
+  const { login, loading } = useContext(AuthContext);
 
   const handleChange = (e) => {
     const { value, name } = e.target;
@@ -153,8 +153,9 @@ export default function Login() {
                     className={
                       "w-full bg-gradient-to-r from-purple-600 to-blue-600 "
                     }
+                    disable={loading}
                   >
-                    Login to your Account
+                    {loading ? <Loader2 className="animate-spin"/> : "Login to your Account"}
                   </Button>
                 </div>
               </form>

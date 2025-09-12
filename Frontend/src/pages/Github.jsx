@@ -28,9 +28,25 @@ import {
   CardHeader,
   CardTitle,
 } from "../components/ui/card";
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "../components/ui/sheet";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../components/ui/dialog";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "../components/ui/sheet";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "../components/ui/dialog";
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "../components/ui/tabs";
 import { useContext } from "react";
 import { AuthContext } from "@/components/context/AuthContext";
 import { githubStore } from "@/components/store/githubStore";
@@ -39,13 +55,8 @@ import { motion } from "framer-motion";
 export default function Github() {
   const navigate = useNavigate();
   const { user } = useContext(AuthContext);
-  const {
-    githubData,
-    loading,
-    error,
-    fetchGithubData,
-    clearGithubData,
-  } = githubStore();
+  const { githubData, loading, error, fetchGithubData, clearGithubData } =
+    githubStore();
 
   const [hasFetched, setHasFetched] = useState(false);
   const [sheetOpen, setSheetOpen] = useState(false);
@@ -61,7 +72,13 @@ export default function Github() {
       clearGithubData();
       setHasFetched(false);
     }
-  }, [user.github.isConnected, githubData, hasFetched, fetchGithubData, clearGithubData]);
+  }, [
+    user.github.isConnected,
+    githubData,
+    hasFetched,
+    fetchGithubData,
+    clearGithubData,
+  ]);
 
   if (!user.github.isConnected) {
     return (
@@ -76,7 +93,9 @@ export default function Github() {
               To view your GitHub profile, please connect your account.
             </p>
             <Button
-              onClick={() => navigate("/connect-github")}
+              onClick={() =>
+                (window.location.href = `https://interviewtalent.onrender.com/api/v1/users/auth/github?userId=${user._id}`)
+              }
               className="bg-secondary hover:bg-secondary/80 text-secondary-foreground"
             >
               Connect with GitHub
@@ -137,21 +156,45 @@ export default function Github() {
     const then = new Date(isoDate);
     const seconds = Math.floor((now - then) / 1000);
     let interval = seconds / 31536000;
-    if (interval > 1) return Math.floor(interval) + (Math.floor(interval) === 1 ? ' year ago' : ' years ago');
+    if (interval > 1)
+      return (
+        Math.floor(interval) +
+        (Math.floor(interval) === 1 ? " year ago" : " years ago")
+      );
     interval = seconds / 2592000;
-    if (interval > 1) return Math.floor(interval) + (Math.floor(interval) === 1 ? ' month ago' : ' months ago');
+    if (interval > 1)
+      return (
+        Math.floor(interval) +
+        (Math.floor(interval) === 1 ? " month ago" : " months ago")
+      );
     interval = seconds / 86400;
-    if (interval > 1) return Math.floor(interval) + (Math.floor(interval) === 1 ? ' day ago' : ' days ago');
+    if (interval > 1)
+      return (
+        Math.floor(interval) +
+        (Math.floor(interval) === 1 ? " day ago" : " days ago")
+      );
     interval = seconds / 3600;
-    if (interval > 1) return Math.floor(interval) + (Math.floor(interval) === 1 ? ' hour ago' : ' hours ago');
+    if (interval > 1)
+      return (
+        Math.floor(interval) +
+        (Math.floor(interval) === 1 ? " hour ago" : " hours ago")
+      );
     interval = seconds / 60;
-    if (interval > 1) return Math.floor(interval) + (Math.floor(interval) === 1 ? ' minute ago' : ' minutes ago');
-    return 'just now';
+    if (interval > 1)
+      return (
+        Math.floor(interval) +
+        (Math.floor(interval) === 1 ? " minute ago" : " minutes ago")
+      );
+    return "just now";
   };
 
   const formatDate = (isoDate) => {
     const date = new Date(isoDate);
-    return date.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+    return date.toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    });
   };
 
   const topLanguages = () => {
@@ -181,7 +224,12 @@ export default function Github() {
     }));
 
   const recentActivity = events
-    .filter((event) => event.type === "PushEvent" || event.type === "ForkEvent" || event.type === "WatchEvent")
+    .filter(
+      (event) =>
+        event.type === "PushEvent" ||
+        event.type === "ForkEvent" ||
+        event.type === "WatchEvent"
+    )
     .map((event) => {
       let type, repo, message, time, icon;
 
@@ -253,7 +301,8 @@ export default function Github() {
                 GitHub Profile
               </h1>
               <p className="text-muted-foreground text-sm md:text-md">
-                Overview for <span className="text-primary">@{ghUser.login}</span>
+                Overview for{" "}
+                <span className="text-primary">@{ghUser.login}</span>
               </p>
             </div>
           </nav>
@@ -309,19 +358,31 @@ export default function Github() {
                 >
                   <div className="flex items-center justify-center lg:justify-start text-muted-foreground">
                     <Rocket className="h-5 w-5 mr-2 text-primary" />
-                    <span className="font-semibold">{ghUser.public_repos}</span> Repos
+                    <span className="font-semibold">
+                      {ghUser.public_repos}
+                    </span>{" "}
+                    Repos
                   </div>
                   <div className="flex items-center justify-center lg:justify-start text-muted-foreground">
                     <Code className="h-5 w-5 mr-2 text-primary" />
-                    <span className="font-semibold">{ghUser.public_gists}</span> Gists
+                    <span className="font-semibold">
+                      {ghUser.public_gists}
+                    </span>{" "}
+                    Gists
                   </div>
                   <div className="flex items-center justify-center lg:justify-start text-muted-foreground">
                     <Users className="h-5 w-5 mr-2 text-primary" />
-                    <span className="font-semibold">{ghUser.followers}</span> Followers
+                    <span className="font-semibold">
+                      {ghUser.followers}
+                    </span>{" "}
+                    Followers
                   </div>
                   <div className="flex items-center justify-center lg:justify-start text-muted-foreground">
                     <Users className="h-5 w-5 mr-2 text-primary" />
-                    <span className="font-semibold">{ghUser.following}</span> Following
+                    <span className="font-semibold">
+                      {ghUser.following}
+                    </span>{" "}
+                    Following
                   </div>
                   <div className="flex items-center justify-center lg:justify-start text-muted-foreground">
                     <Calendar className="h-5 w-5 mr-2 text-primary" />
@@ -359,7 +420,12 @@ export default function Github() {
                   {ghUser.twitter_username && (
                     <Button
                       variant="outline"
-                      onClick={() => window.open(`https://twitter.com/${ghUser.twitter_username}`, "_blank")}
+                      onClick={() =>
+                        window.open(
+                          `https://twitter.com/${ghUser.twitter_username}`,
+                          "_blank"
+                        )
+                      }
                       className="w-full sm:w-auto"
                     >
                       <Twitter className="h-4 w-4 mr-2" />
@@ -399,11 +465,16 @@ export default function Github() {
                             className="bg-primary h-2 rounded-full"
                             initial={{ width: 0 }}
                             animate={{ width: `${lang.percentage}%` }}
-                            transition={{ duration: 0.5, delay: index * 0.1 + 0.2 }}
+                            transition={{
+                              duration: 0.5,
+                              delay: index * 0.1 + 0.2,
+                            }}
                           ></motion.div>
                         </div>
                       </div>
-                      <span className="font-bold text-primary">{lang.percentage}%</span>
+                      <span className="font-bold text-primary">
+                        {lang.percentage}%
+                      </span>
                     </motion.div>
                   ))
                 ) : (
@@ -419,7 +490,8 @@ export default function Github() {
           <Card className="bg-card border border-border text-foreground shadow-sm mb-8">
             <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle className="text-xl flex items-center">
-                <BookOpen className="mr-2 h-5 w-5 text-primary" /> Repositories ({allRepos.length})
+                <BookOpen className="mr-2 h-5 w-5 text-primary" /> Repositories
+                ({allRepos.length})
               </CardTitle>
               {allRepos.length > 4 && (
                 <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
@@ -444,7 +516,7 @@ export default function Github() {
                             <motion.div
                               key={repo.id}
                               className="p-4 bg-secondary/50 rounded-lg border border-border hover:bg-secondary hover:shadow-lg transition-all duration-200 cursor-pointer group"
-                              onClick={() => handleItemClick(repo, 'repo')}
+                              onClick={() => handleItemClick(repo, "repo")}
                               initial={{ opacity: 0, y: 20 }}
                               animate={{ opacity: 1, y: 0 }}
                               transition={{ duration: 0.3 }}
@@ -463,7 +535,10 @@ export default function Github() {
                               <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
                                 <div className="flex items-center gap-2">
                                   {repo.language && (
-                                    <Badge variant="outline" className="text-xs px-2 py-1">
+                                    <Badge
+                                      variant="outline"
+                                      className="text-xs px-2 py-1"
+                                    >
                                       {repo.language}
                                     </Badge>
                                   )}
@@ -507,7 +582,9 @@ export default function Github() {
                               <motion.div
                                 key={activity.id}
                                 className="flex items-start gap-4 p-4 bg-secondary/50 rounded-lg hover:bg-secondary transition-colors duration-200 cursor-pointer"
-                                onClick={() => handleItemClick(activity, 'event')}
+                                onClick={() =>
+                                  handleItemClick(activity, "event")
+                                }
                                 initial={{ opacity: 0, y: 20 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 transition={{ duration: 0.3 }}
@@ -517,9 +594,12 @@ export default function Github() {
                                 </div>
                                 <div className="flex-1">
                                   <p className="font-semibold text-foreground">
-                                    {activity.type}{' '}
+                                    {activity.type}{" "}
                                     <span className="text-primary font-medium">
-                                      {activity.repo.replace(`${ghUser.login}/`, '')}
+                                      {activity.repo.replace(
+                                        `${ghUser.login}/`,
+                                        ""
+                                      )}
                                     </span>
                                   </p>
                                   {activity.message && (
@@ -547,7 +627,7 @@ export default function Github() {
                   <motion.div
                     key={repo.id}
                     className="p-4 bg-secondary/50 rounded-lg border border-border hover:bg-secondary hover:shadow-lg transition-all duration-200 cursor-pointer group"
-                    onClick={() => handleItemClick(repo, 'repo')}
+                    onClick={() => handleItemClick(repo, "repo")}
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.3 }}
@@ -566,7 +646,10 @@ export default function Github() {
                     <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
                       <div className="flex items-center gap-2">
                         {repo.language && (
-                          <Badge variant="outline" className="text-xs px-2 py-1">
+                          <Badge
+                            variant="outline"
+                            className="text-xs px-2 py-1"
+                          >
                             {repo.language}
                           </Badge>
                         )}
@@ -638,7 +721,7 @@ export default function Github() {
                             <motion.div
                               key={repo.id}
                               className="p-4 bg-secondary/50 rounded-lg border border-border hover:bg-secondary hover:shadow-lg transition-all duration-200 cursor-pointer group"
-                              onClick={() => handleItemClick(repo, 'repo')}
+                              onClick={() => handleItemClick(repo, "repo")}
                               initial={{ opacity: 0, y: 20 }}
                               animate={{ opacity: 1, y: 0 }}
                               transition={{ duration: 0.3 }}
@@ -657,7 +740,10 @@ export default function Github() {
                               <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
                                 <div className="flex items-center gap-2">
                                   {repo.language && (
-                                    <Badge variant="outline" className="text-xs px-2 py-1">
+                                    <Badge
+                                      variant="outline"
+                                      className="text-xs px-2 py-1"
+                                    >
                                       {repo.language}
                                     </Badge>
                                   )}
@@ -701,7 +787,9 @@ export default function Github() {
                               <motion.div
                                 key={activity.id}
                                 className="flex items-start gap-4 p-4 bg-secondary/50 rounded-lg hover:bg-secondary transition-colors duration-200 cursor-pointer"
-                                onClick={() => handleItemClick(activity, 'event')}
+                                onClick={() =>
+                                  handleItemClick(activity, "event")
+                                }
                                 initial={{ opacity: 0, y: 20 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 transition={{ duration: 0.3 }}
@@ -711,9 +799,12 @@ export default function Github() {
                                 </div>
                                 <div className="flex-1">
                                   <p className="font-semibold text-foreground">
-                                    {activity.type}{' '}
+                                    {activity.type}{" "}
                                     <span className="text-primary font-medium">
-                                      {activity.repo.replace(`${ghUser.login}/`, '')}
+                                      {activity.repo.replace(
+                                        `${ghUser.login}/`,
+                                        ""
+                                      )}
                                     </span>
                                   </p>
                                   {activity.message && (
@@ -744,7 +835,7 @@ export default function Github() {
                       <motion.div
                         key={activity.id}
                         className="flex items-start gap-4 p-4 bg-secondary/50 rounded-lg hover:bg-secondary transition-colors duration-200 cursor-pointer"
-                        onClick={() => handleItemClick(activity, 'event')}
+                        onClick={() => handleItemClick(activity, "event")}
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.3 }}
@@ -754,9 +845,9 @@ export default function Github() {
                         </div>
                         <div className="flex-1">
                           <p className="font-semibold text-foreground">
-                            {activity.type}{' '}
+                            {activity.type}{" "}
                             <span className="text-primary font-medium">
-                              {activity.repo.replace(`${ghUser.login}/`, '')}
+                              {activity.repo.replace(`${ghUser.login}/`, "")}
                             </span>
                           </p>
                           {activity.message && (
@@ -785,10 +876,12 @@ export default function Github() {
             <DialogContent className="sm:max-w-2xl">
               <DialogHeader>
                 <DialogTitle>
-                  {dialogType === 'repo' ? 'Repository Details' : 'Event Details'}
+                  {dialogType === "repo"
+                    ? "Repository Details"
+                    : "Event Details"}
                 </DialogTitle>
               </DialogHeader>
-              {selectedItem && dialogType === 'repo' && (
+              {selectedItem && dialogType === "repo" && (
                 <div className="space-y-4">
                   <div>
                     <h3 className="text-lg font-semibold flex items-center">
@@ -817,7 +910,7 @@ export default function Github() {
                         Language
                       </p>
                       <p className="text-sm text-muted-foreground">
-                        {selectedItem.language || 'N/A'}
+                        {selectedItem.language || "N/A"}
                       </p>
                     </div>
                     <div>
@@ -886,7 +979,9 @@ export default function Github() {
                   </div>
                   <div className="flex flex-col sm:flex-row gap-4">
                     <Button
-                      onClick={() => window.open(selectedItem.html_url, "_blank")}
+                      onClick={() =>
+                        window.open(selectedItem.html_url, "_blank")
+                      }
                       className="w-full sm:w-auto"
                     >
                       View on GitHub
@@ -894,7 +989,9 @@ export default function Github() {
                     {selectedItem.homepage && (
                       <Button
                         variant="outline"
-                        onClick={() => window.open(selectedItem.homepage, "_blank")}
+                        onClick={() =>
+                          window.open(selectedItem.homepage, "_blank")
+                        }
                         className="w-full sm:w-auto"
                       >
                         <Globe className="h-4 w-4 mr-2" />
@@ -904,7 +1001,7 @@ export default function Github() {
                   </div>
                 </div>
               )}
-              {selectedItem && dialogType === 'event' && (
+              {selectedItem && dialogType === "event" && (
                 <div className="space-y-4">
                   <div>
                     <h3 className="text-lg font-semibold flex items-center">
@@ -945,7 +1042,12 @@ export default function Github() {
                     </p>
                   </div>
                   <Button
-                    onClick={() => window.open(`https://github.com/${selectedItem.repo}`, "_blank")}
+                    onClick={() =>
+                      window.open(
+                        `https://github.com/${selectedItem.repo}`,
+                        "_blank"
+                      )
+                    }
                     className="w-full sm:w-auto"
                   >
                     View Repository
