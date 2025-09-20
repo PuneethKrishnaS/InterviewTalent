@@ -143,7 +143,7 @@ export default function Login() {
                     <Checkbox /> Remember me
                   </label>
                   <span className="text-blue-500 cursor-pointer">
-                    Forgot password?
+                    <Link to={"/reset-password"}>Forgot password?</Link>
                   </span>
                 </div>
 

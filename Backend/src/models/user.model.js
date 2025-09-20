@@ -86,6 +86,11 @@ const userSchema = new mongoose.Schema(
         lowercase: true,
       },
 
+      otp: {
+        type: Number,
+        trim: true,
+      },
+
       githubId: {
         type: Number,
       },

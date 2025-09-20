@@ -4,9 +4,9 @@
     "description": "",
     "main": "index.js",
     "scripts": {
-    "server": "node -r dotenv/config src/index.js",
-    "dev": "nodemon -r dotenv/config src/index.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+        "server": "node -r dotenv/config src/index.js",
+        "dev": "nodemon -r dotenv/config src/index.js",
+        "test": "echo \"Error: no test specified\" && exit 1"
     },
     "keywords": [],
     "author": "",
@@ -24,6 +24,7 @@
         "joi": "^18.0.0",
         "jsonwebtoken": "^9.0.2",
         "mongoose": "^8.17.0",
+        "nodemailer": "^7.0.6",
         "passport": "^0.7.0",
         "passport-github2": "^0.1.12"
     },

@@ -1,5 +1,8 @@
 import { Router } from "express";
 import {
+  forgetPasswordReset,
+  forgetPasswordSendOTP,
+  forgetPasswordVerifyOTP,
   getCurrentUser,
   github,
   githubCallback,
@@ -18,6 +21,9 @@ const router = Router();
 router.route("/register").post(registerUser);
 router.route("/login").post(loginUser);
 router.route("/logout").post(verifyJWT, logoutUser);
+router.route("/send-otp").post(forgetPasswordSendOTP)
+router.route("/verify-otp").post(forgetPasswordVerifyOTP)
+router.route("/reset-password").post(forgetPasswordReset)
 router.route("/refresh-token").post(refreshAccessAndRefreshToken);
 router.route("/current_user").get(verifyJWT, getCurrentUser);
 router.get("/github", github);

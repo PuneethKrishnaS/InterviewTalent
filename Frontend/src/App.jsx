@@ -18,6 +18,7 @@ import VoiceInterview from "./pages/VoiceInterview";
 import VoiceCall from "./pages/VoiceCall";
 import { Ripple } from "./components/magicui/ripple";
 import { LoadingScreen } from "./components/LoadingScreen";
+import ForgetPassword from "./pages/ForgetPassword";
 
 function App() {
   const { getUser, authenticated } = useContext(AuthContext);
@@ -71,6 +72,14 @@ function App() {
           element={
             <RedirectRoute>
               <Signup />
+            </RedirectRoute>
+          }
+        />
+        <Route
+          path="/reset-password"
+          element={
+            <RedirectRoute>
+              <ForgetPassword />
             </RedirectRoute>
           }
         />

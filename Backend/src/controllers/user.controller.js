@@ -5,6 +5,8 @@ import { appResponse } from "../utils/appResponse.js";
 import { userSignupValidater } from "../validators/user.validators.js";
 import jwt from "jsonwebtoken";
 import passport from "passport";
+import nodemaler from "nodemailer";
+import bcrypt from "bcrypt";
 
 const generateAccessAndRefreshToken = async (user_id) => {
   const user = await User.findById(user_id);
@@ -171,11 +173,134 @@ const logoutUser = asyncHandler(async (req, res) => {
     .json(new appResponse(200, {}, "User Logged Out"));
 });
 
+const forgetPasswordSendOTP = asyncHandler(async (req, res) => {
+  const { email } = req.body;
+
+  if (!email) {
+    throw new appError(500, "Email is required.");
+  }
+
+  const user = await User.findOne({ email: email });
+
+  if (!user) {
+    throw new appError(500, "User does not exist!");
+  }
+
+  const genarateOTP = Math.floor(100000 + Math.random() * 900000);
+
+  const updateOTP = await User.findByIdAndUpdate(
+    user._id,
+    { otp: genarateOTP },
+    { new: true }
+  );
+
+  if (!updateOTP) {
+    throw new appError(401, "Failed to genarate OTP");
+  }
+
+  const sender = nodemaler.createTransport({
+    service: "gmail",
+    secure: true,
+    port: 465,
+    auth: {
+      user: "rspuneeth30@gmail.com",
+      pass: "vofh xtqu ejki ptcb",
+    },
+  });
+
+  sender.sendMail(
+    {
+      from: "rspuneeth30@gmail.com",
+      to: user.email,
+      subject: "Password Reset Request",
+      html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; border: 1px solid #ddd; border-radius: 8px; overflow: hidden;">
+        <div style="background-color: #f7f7f7; padding: 20px; text-align: center;">
+          <h2 style="margin: 0; color: #333;">Password Reset</h2>
+        </div>
+        <div style="padding: 30px; text-align: center;">
+          <p style="font-size: 16px; color: #555;">Hello,${user.userName.first}</p>
+          <p style="font-size: 16px; color: #555;">You have requested to reset your password. Use the following OTP to proceed:</p>
+          <div style="display: inline-block; padding: 15px 30px; margin: 20px 0; background-color: #6a1b9a; color: white; border-radius: 5px; font-size: 24px; font-weight: bold; letter-spacing: 5px;">
+            ${genarateOTP}
+          </div>
+          <p style="font-size: 14px; color: #888;">This code is valid for a short period. Please do not share it with anyone.</p>
+        </div>
+        <div style="background-color: #f7f7f7; padding: 20px; text-align: center; font-size: 12px; color: #999;">
+          <p style="margin: 0;">&copy; 2025 InterviewTalent. All rights reserved.</p>
+        </div>
+      </div>
+    `,
+    },
+    (error, info) => {
+      if (error) {
+        console.error("Error sending mail:", error);
+        throw new appError(500, "Failed to send OTP email");
+      } else {
+        res
+          .status(200)
+          .json(new appResponse(200, "OTP sent successfully to your email."));
+      }
+    }
+  );
+});
+
+const forgetPasswordVerifyOTP = asyncHandler(async (req, res) => {
+  const { email, otp } = req.body;
+
+  if (!email || !otp) {
+    throw new appError(500, "OTP is required!");
+  }
+
+  try {
+    const user = await User.findOne({ email: email });
+
+    if (!user) {
+      throw new appError(500, "User does not exist");
+    }
+
+    if (!user.otp === otp) {
+      throw new appError(500, "OTP do not match");
+    }
+
+    res.status(200).json(new appResponse(200, "OTP Matches sucessfully"));
+  } catch (error) {
+    throw new appError(500, error.message);
+  }
+});
+
+const forgetPasswordReset = asyncHandler(async (req, res) => {
+  const { email, newPassword } = req.body;
+
+  if (!email || !newPassword) {
+    throw new appError(500, "Password is required!");
+  }
+
+  try {
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+    const user = await User.findOneAndUpdate(
+      { email: email },
+      { password: hashedPassword },
+      { new: true }
+    );
+
+    if (!user) {
+      throw new appError(401, "Password not updated");
+    }
+
+    res.status(200).json(new appResponse(200, "Password updated sucessfully"));
+  } catch (error) {
+    throw new appError(500, error.message);
+  }
+});
+
 const github = passport.authenticate("github", {
   scope: ["user:email"],
   session: false,
 });
-const githubConnect  = passport.authenticate("github", {
+
+const githubConnect = passport.authenticate("github", {
   scope: ["user:email"],
   session: false,
 });
@@ -232,7 +357,6 @@ const githubConnectCallback = (req, res, next) => {
   )(req, res, next);
 };
 
-
 const getCurrentUser = asyncHandler(async (req, res) => {
   res
     .status(200)
@@ -243,6 +367,9 @@ export {
   registerUser,
   loginUser,
   logoutUser,
+  forgetPasswordSendOTP,
+  forgetPasswordVerifyOTP,
+  forgetPasswordReset,
   refreshAccessAndRefreshToken,
   getCurrentUser,
   generateAccessAndRefreshToken,
