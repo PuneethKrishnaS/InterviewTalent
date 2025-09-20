@@ -83,6 +83,48 @@ const saveResume = asyncHandler(async (req, res) => {
       { new: true, upsert: true }
     );
 
+    const ATS = await groqHamdlerAI({
+      messages: [
+        {
+          role: "system",
+          content:
+            "You are an expert in ATS (Applicant Tracking Systems) resume evaluation. Your job is to analyze resumes for ATS compatibility and provide a score with clear feedback.",
+        },
+        {
+          role: "user",
+          content: `
+      Evaluate the following resume for ATS (Applicant Tracking System) compatibility. 
+      Give a score strictly between 0–100, where:
+      - 0 = very poor ATS compatibility
+      - 100 = perfect ATS compatibility
+
+      Respond ONLY in this exact JSON format:
+      {
+        "ATS_Score": "<number as string between 0-100>",
+        "suggestions": "<short paragraph style improvements in plain text>",
+        "improvement_Suggestion": "<one or two words summarizing the key improvement>"
+      }
+
+      Resume Content:
+      ${JSON.stringify(resume)}
+    `,
+        },
+      ],
+    });
+
+    const resumeScore = Number(ATS.ATS_Score);
+    if (!isNaN(resumeScore)) {
+      const updatedUser = await User.findByIdAndUpdate(
+        user._id,
+        { "performanceMetrics.resumeScore": resumeScore },
+        { new: true }
+      );
+
+      if (!updatedUser) {
+        throw new appError(400, "ATS score not saved in DB");
+      }
+    }
+
     if (!resume) {
       throw new appError(400, "Resume not saved in DB");
     }

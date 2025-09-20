@@ -153,9 +153,13 @@ export default function Login() {
                     className={
                       "w-full bg-gradient-to-r from-purple-600 to-blue-600 "
                     }
-                    disable={loading}
+                    disabled={loading}
                   >
-                    {loading ? <Loader2 className="animate-spin"/> : "Login to your Account"}
+                    {loading ? (
+                      <Loader2 className="animate-spin" />
+                    ) : (
+                      "Login to your Account"
+                    )}
                   </Button>
                 </div>
               </form>
@@ -174,18 +178,25 @@ export default function Login() {
 
               {/* Social login */}
               <div className="flex flex-col sm:flex-row gap-3">
-                <button className="flex items-center justify-center gap-2 border-2 rounded-md p-2 w-full">
-                  <Chrome /> Google
-                </button>
-                <button
+                <Button
                   className="flex items-center justify-center gap-2 border-2 rounded-md p-2 w-full"
+                  disabled
+                >
+                  <Chrome /> Google
+                </Button>
+                <Button
+                  className="flex items-center justify-center gap-2 border-2 rounded-md p-2 w-full cursor-pointer bg-background text-foreground hover:bg-background hover:text-foreground"
                   onClick={() =>
                     (window.location.href =
-                      "https://interviewtalent.onrender.com/api/v1/users/auth/github")
+                      import.meta.env.VITE_ENV === "production"
+                        ? `${
+                            import.meta.env.VITE_BACKEND_URL
+                          }/api/v1/users/auth/github`
+                        : "http://localhost:8000/api/v1/users/auth/github")
                   }
                 >
                   <Github /> GitHub
-                </button>
+                </Button>
               </div>
 
               {/* Sign up link */}

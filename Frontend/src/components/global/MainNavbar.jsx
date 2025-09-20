@@ -22,7 +22,7 @@ export default function MainNavbar() {
     }`;
 
   return (
-    <div className="w-full z-10  fixed top-0 backdrop-blur-3xl border-b ">
+    <div className="w-full z-100 fixed top-0 backdrop-blur-3xl border-b ">
       <div className="container mx-auto lg:px-8 px-5 flex justify-between py-2 items-center">
         <LogoFull />
         <DropdownMenu>

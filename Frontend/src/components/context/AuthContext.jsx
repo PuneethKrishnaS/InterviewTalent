@@ -72,13 +72,15 @@ export const AuthProvider = ({ children }) => {
       setUser(res.data?.data);
       setAuthenticated(true);
       setCheckingAuth(false);
-      setLoading(false);
     } catch (error) {
-      setLoading(false);
       setUser(null);
       setAuthenticated(false);
+      setLoading(false);
     }
+    setLoading(false);
   };
+
+  
 
   const values = {
     login,

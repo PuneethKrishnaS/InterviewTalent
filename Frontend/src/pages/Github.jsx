@@ -93,9 +93,14 @@ export default function Github() {
               To view your GitHub profile, please connect your account.
             </p>
             <Button
-              onClick={() =>
-                (window.location.href = `${import.meta.env.VITE_BACKEND_URL}api/v1/users/auth/github?userId=${user._id}`)
-              }
+              onClick={() => {
+                const baseUrl =
+                  import.meta.env.VITE_ENV === "production"
+                    ? import.meta.env.VITE_BACKEND_URL
+                    : "http://localhost:8000/";
+
+                window.location.href = `${baseUrl}api/v1/users/auth/github/connect/callback`;
+              }}
               className="bg-secondary hover:bg-secondary/80 text-secondary-foreground"
             >
               Connect with GitHub

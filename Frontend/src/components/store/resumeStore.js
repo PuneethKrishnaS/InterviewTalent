@@ -1,6 +1,9 @@
 import { create } from "zustand";
 import { v4 as uuidv4 } from "uuid";
 import api from "@/utils/axios";
+import { useContext } from "react";
+import { AuthContext } from "../context/AuthContext";
+import { toast } from "sonner";
 
 export const useResumeStore = create((set) => ({
   resumeData: {
@@ -211,16 +214,12 @@ export const useResumeStore = create((set) => ({
     setTimeout(() => set({ showPdf: true }), 100);
   },
 
-  handleFetchGithubProjects: async () => {
-    const username = prompt("Please enter your GitHub username:");
-    if (!username) return;
-
+  handleFetchGithubProjects: async (username) => {
     try {
       set({ showPdf: false });
       const response = await fetch(
         `https://api.github.com/users/${username}/repos`
       );
-      if (!response.ok) throw new Error("User not found or an error occurred.");
 
       const repos = await response.json();
       const newProjects = repos.map((repo) => ({
@@ -241,11 +240,11 @@ export const useResumeStore = create((set) => ({
         },
       }));
 
-      alert(`Successfully fetched ${repos.length} projects from GitHub!`);
+      toast.success(`Successfully fetched ${repos.length} projects from GitHub!`);
       setTimeout(() => set({ showPdf: true }), 100);
     } catch (error) {
       console.error("Error fetching projects:", error);
-      alert(error.message);
+      toast.error(error.message);
       set({ showPdf: true });
     }
   },
@@ -314,7 +313,6 @@ export const useResumeStore = create((set) => ({
       case "Achievements": {
         try {
           let aiAchievements = AI_Response?.data?.data;
-          console.log(aiAchievements);
 
           if (!aiAchievements) return;
 
@@ -346,7 +344,6 @@ export const useResumeStore = create((set) => ({
         try {
           set({ loading: true });
           const fetched = AI_Response?.data?.data;
-          console.log("FixEverything response:", fetched);
 
           if (fetched) {
             set({ resumeData: fetched, loading: false });

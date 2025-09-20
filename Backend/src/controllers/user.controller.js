@@ -175,6 +175,10 @@ const github = passport.authenticate("github", {
   scope: ["user:email"],
   session: false,
 });
+const githubConnect  = passport.authenticate("github", {
+  scope: ["user:email"],
+  session: false,
+});
 
 const githubCallback = (req, res, next) => {
   passport.authenticate(
@@ -213,6 +217,22 @@ const githubCallback = (req, res, next) => {
   )(req, res, next);
 };
 
+const githubConnectCallback = (req, res, next) => {
+  passport.authenticate(
+    "github",
+    { failureRedirect: "/dashboard", session: false },
+    async (err, user) => {
+      if (err || !user) {
+        return res.redirect("/dashboard?error=github_connect_failed");
+      }
+
+      // ✅ At this point, user is the same `req.user` updated with GitHub info
+      return res.redirect("/dashboard?github=connected");
+    }
+  )(req, res, next);
+};
+
+
 const getCurrentUser = asyncHandler(async (req, res) => {
   res
     .status(200)
@@ -228,4 +248,6 @@ export {
   generateAccessAndRefreshToken,
   githubCallback,
   github,
+  githubConnect,
+  githubConnectCallback,
 };

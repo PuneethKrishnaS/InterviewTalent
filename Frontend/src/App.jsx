@@ -16,18 +16,20 @@ import { useEffect } from "react";
 import NotFound from "./pages/NotFound";
 import VoiceInterview from "./pages/VoiceInterview";
 import VoiceCall from "./pages/VoiceCall";
+import { Ripple } from "./components/magicui/ripple";
+import { LoadingScreen } from "./components/LoadingScreen";
 
 function App() {
-  const { getUser, loading, user, checkingAuth, authenticated } =
-    useContext(AuthContext);
+  const { getUser, authenticated } = useContext(AuthContext);
 
   useEffect(() => {
     getUser();
   }, []);
-
   const ProtectedRoute = ({ children }) => {
-    if (loading && checkingAuth) {
-      return <div>loading</div>;
+    const { user, authenticated, checkingAuth } = useContext(AuthContext); // Get checkingAuth state
+
+    if (checkingAuth) {
+      return <LoadingScreen />;
     }
 
     if (!user && !authenticated) {

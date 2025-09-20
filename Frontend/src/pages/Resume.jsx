@@ -43,6 +43,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useResumeStore } from "@/components/store/resumeStore";
 import { AuthContext } from "@/components/context/AuthContext";
+import { toast } from "sonner";
 
 // Error Boundary Component to catch PDF rendering errors
 class ErrorBoundary extends React.Component {
@@ -500,6 +501,8 @@ export default function Resume() {
     setUserPrompt(e.target.value);
   };
 
+  console.log(user);
+
   return (
     <div className="bg-background min-h-screen text-foreground font-inter">
       <MainNavbar />
@@ -600,7 +603,7 @@ export default function Resume() {
                                 e.target.value
                               )
                             }
-                            placeholder="e.g., https://linkedin.com/in/johndoe"
+                            placeholder={`e.g., https://linkedin.com/in/${user.userName.first}`}
                           />
                         </div>
                         <div>
@@ -611,7 +614,11 @@ export default function Resume() {
                             onChange={(e) =>
                               handleChange("personal", "github", e.target.value)
                             }
-                            placeholder="e.g., https://github.com/johndoe"
+                            placeholder={`e.g., ${
+                              user.github?.isConnected
+                                ? "https://github.com/" + user.github?.username
+                                : "https://github.com/" + user.userName.first
+                            }`}
                           />
                         </div>
                       </form>
@@ -1018,7 +1025,11 @@ export default function Resume() {
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={handleFetchGithubProjects}
+                          onClick={() => {
+                            user.github.isConnected
+                              ? handleFetchGithubProjects(user.github.username)
+                              : toast.error("Update your Resume");
+                          }}
                           className="hover:bg-secondary/80 text-secondary-foreground"
                         >
                           <Github className="h-4 w-4 mr-1" /> Fetch from GitHub

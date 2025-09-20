@@ -3,6 +3,8 @@ import {
   getCurrentUser,
   github,
   githubCallback,
+  githubConnect,
+  githubConnectCallback,
   loginUser,
   logoutUser,
   refreshAccessAndRefreshToken,
@@ -20,5 +22,7 @@ router.route("/refresh-token").post(refreshAccessAndRefreshToken);
 router.route("/current_user").get(verifyJWT, getCurrentUser);
 router.get("/github", github);
 router.get("/github/callback", githubCallback);
+router.get("/github/connect", verifyJWT, githubConnect);
+router.get("/github/connect/callback", verifyJWT, githubConnectCallback);
 
 export default router;

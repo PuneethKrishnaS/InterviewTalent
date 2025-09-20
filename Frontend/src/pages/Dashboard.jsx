@@ -115,16 +115,18 @@ export default function Dashboard() {
       icon: Calculator,
       color: "text-purple-600 dark:text-purple-400",
       path: "/aptitude",
+      status: "coming_soon",
       illustration: aptitudeActionIllustration,
     },
-    {
-      title: "Group Discussion",
-      description: "Hone your communication and leadership skills.",
-      icon: Users,
-      color: "text-orange-600 dark:text-orange-400",
-      path: "/group-discussion",
-      illustration: groupDiscussionActionIllustration,
-    },
+    // {
+    //   title: "Group Discussion",
+    //   description: "Hone your communication and leadership skills.",
+    //   icon: Users,
+    //   color: "text-orange-600 dark:text-orange-400",
+    //   path: "/group-discussion",
+    //   status: "coming_soon",
+    //   illustration: groupDiscussionActionIllustration,
+    // },
   ];
 
   return (
@@ -219,19 +221,26 @@ export default function Dashboard() {
                   ))}
                 </div>
               </section>
-
               {/* Explore & Practice - Redesigned */}
               <section>
                 <h2 className="text-2xl font-semibold text-foreground mb-6 flex items-center gap-3">
                   <Play className="w-6 h-6 text-blue-700 dark:text-blue-400" />
                   Explore & Practice
                 </h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-3 gap-6">
                   {explorePracticeActions.map((action, index) => (
                     <Card
                       key={index}
-                      className={`group cursor-pointer hover:shadow-lg transition-shadow duration-300 border border-border bg-card dark:bg-card-dark relative overflow-hidden flex flex-col justify-between p-6`}
-                      onClick={() => navigate(action.path)}
+                      className={`group relative overflow-hidden flex flex-col justify-between p-6 ${
+                        action.status === "coming_soon"
+                          ? "cursor-not-allowed border-dashed border-gray-300 dark:border-gray-700"
+                          : "cursor-pointer hover:shadow-lg transition-shadow duration-300 border border-border bg-card dark:bg-card-dark"
+                      }`}
+                      onClick={() => {
+                        if (action.status !== "coming_soon") {
+                          navigate(action.path);
+                        }
+                      }}
                     >
                       <div className="relative z-10">
                         <h3 className="text-xl font-semibold text-foreground mb-1">
@@ -241,6 +250,13 @@ export default function Dashboard() {
                           {action.description}
                         </p>
                       </div>
+                      {action.status === "coming_soon" && (
+                        <div className="absolute inset-0 bg-background/80 dark:bg-background-dark/80 backdrop-blur-sm flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-20">
+                          <Badge className="bg-orange-500 text-white dark:bg-orange-400 dark:text-gray-900 font-semibold animate-pulse">
+                            Coming Soon
+                          </Badge>
+                        </div>
+                      )}
                       <div className="absolute bottom-0 right-0 w-42 opacity-70 group-hover:opacity-100 transition-opacity duration-300 translate-x-1/4 translate-y-1/4">
                         <img
                           src={action.illustration}
@@ -250,9 +266,24 @@ export default function Dashboard() {
                       </div>
                       <Button
                         variant="ghost"
-                        className="w-full mt-4 text-primary flex items-center justify-start p-0 h-auto hover:bg-transparent hover:underline relative z-10"
+                        className={`w-full mt-4 text-primary flex items-center justify-start p-0 h-auto hover:bg-transparent ${
+                          action.status === "coming_soon"
+                            ? "opacity-50"
+                            : "hover:underline"
+                        } relative z-10`}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (action.status !== "coming_soon") {
+                            navigate(action.path);
+                          }
+                        }}
+                        disabled={action.status === "coming_soon"}
                       >
-                        Launch
+                        {action.status === "coming_soon" ? (
+                          <>Comming soon</>
+                        ) : (
+                          <>Launch</>
+                        )}
                         <ChevronRight className="ml-1 w-4 h-4" />
                       </Button>
                     </Card>
@@ -303,7 +334,6 @@ export default function Dashboard() {
                     </Badge>
                   </div>
                   <CardContent className="pw-6 text-center flex flex-col items-center">
-
                     <CardTitle className="text-xl font-bold text-foreground">
                       Voice Interview
                     </CardTitle>

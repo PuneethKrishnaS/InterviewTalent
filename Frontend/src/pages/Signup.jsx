@@ -262,13 +262,27 @@ export default function Signup() {
 
               {/* Social login */}
               <div className="flex flex-col sm:flex-row gap-3">
-                <button className="flex items-center justify-center gap-2 border-2 rounded-md p-2 w-full">
+                <Button
+                  className="flex items-center justify-center gap-2 border-2 rounded-md p-2 w-full"
+                  disabled
+                >
                   <Chrome /> Google
-                </button>
-                <button className="flex items-center justify-center gap-2 border-2 rounded-md p-2 w-full">
+                </Button>
+                <Button
+                  className="flex items-center justify-center gap-2 border-2 rounded-md p-2 w-full cursor-pointer bg-background text-foreground hover:bg-popover hover:text-foreground"
+                  onClick={() =>
+                    (window.location.href =
+                      import.meta.env.VITE_ENV === "production"
+                        ? `${
+                            import.meta.env.VITE_BACKEND_URL
+                          }/api/v1/users/auth/github`
+                        : "http://localhost:8000/api/v1/users/auth/github")
+                  }
+                >
                   <Github /> GitHub
-                </button>
+                </Button>
               </div>
+
 
               {/* Sign up link */}
               <p className="text-center text-sm mt-4">

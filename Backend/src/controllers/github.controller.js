@@ -46,7 +46,6 @@ const fetchRepoFromGithub = async (url, config) => {
 
 const fetchEventFromGithub = async (url, config) => {
   try {
-    // Remove placeholder parts from URLs like "...{/privacy}" or "...{/sha}"
     const cleanUrl = url?.replace(/\{.*\}$/, "");
 
     const allEvents = await axios.get(cleanUrl, config);
@@ -96,7 +95,6 @@ const fetchUserFromGithub = asyncHandler(async (req, res) => {
       headers: { Authorization: `token ${user.github.accessToken}` },
     };
 
-    // Get GitHub user profile
     const githubResponse = await axios.get(user.github.url, config);
 
     const {
@@ -126,7 +124,6 @@ const fetchUserFromGithub = asyncHandler(async (req, res) => {
     // Fetch repos & events
     const fetchedRepos = await fetchRepoFromGithub(repos_url, config);
     const fetchedEvents = await fetchEventFromGithub(events_url, config);
-
 
     // Build full object
     const githubData = {
