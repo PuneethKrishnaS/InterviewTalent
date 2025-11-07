@@ -12,6 +12,7 @@ import {
   Trash2,
   Save,
   Loader2,
+  ChevronLeft,
 } from "lucide-react";
 import {
   Card,
@@ -501,8 +502,6 @@ export default function Resume() {
     setUserPrompt(e.target.value);
   };
 
-  console.log(user);
-
   return (
     <div className="bg-background min-h-screen text-foreground font-inter">
       <MainNavbar />
@@ -510,14 +509,9 @@ export default function Resume() {
         <div className="container mx-auto lg:px-8 px-5 py-8 md:py-12">
           {/* Top navigation */}
           <nav className="flex justify-between items-center mt-8 mb-8">
-            <Button
-              variant={"link"}
-              onClick={() => navigate("/dashboard")}
-              className="cursor-pointer text-muted-foreground hover:text-foreground"
-            >
-              <ArrowLeftCircle className="mr-2 h-5 w-5" />
-              Back to Dashboard
-            </Button>
+          <Button variant="ghost" onClick={() => navigate(-1)}>
+            <ChevronLeft className="h-4 w-4" /> Back
+          </Button>
             <div className="text-right">
               <h1 className="font-black text-xl md:text-2xl text-foreground">
                 Resume Builder

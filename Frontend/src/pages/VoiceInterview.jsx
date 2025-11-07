@@ -8,6 +8,7 @@ import {
   User,
   Briefcase,
   Sparkle,
+  ChevronLeft,
 } from "lucide-react";
 import {
   Card,
@@ -167,14 +168,9 @@ export default function VoiceInterview() {
         <div className="container mx-auto lg:px-8 px-5 py-22">
           {/* Top nav */}
           <nav className="flex justify-between items-center mb-8">
-            <Button
-              variant={"link"}
-              onClick={() => navigate("/dashboard")}
-              className="cursor-pointer"
-            >
-              <ArrowLeftCircle className="mr-2" />
-              Go Back
-            </Button>
+          <Button variant="ghost" onClick={() => navigate(-1)}>
+            <ChevronLeft className="h-4 w-4" /> Back
+          </Button>
             <div className="text-right">
               <h1 className="font-black text-md md:text-xl">Mock Interview</h1>
               <p className="text-muted-foreground text-sm md:text-md">

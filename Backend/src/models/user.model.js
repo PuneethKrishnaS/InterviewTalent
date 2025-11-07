@@ -50,6 +50,11 @@ const userSchema = new mongoose.Schema(
       trim: true,
     },
 
+    otp: {
+      number: { type: Number, default: null },
+      validTill: { type: Date, default: null, index: { expires: 0 } },
+    },
+
     refreshToken: {
       type: String,
       default: null,
@@ -84,11 +89,6 @@ const userSchema = new mongoose.Schema(
         match: [/.+\@.+\..+/, "Please enter a valid email address"],
         trim: true,
         lowercase: true,
-      },
-
-      otp: {
-        type: Number,
-        trim: true,
       },
 
       githubId: {

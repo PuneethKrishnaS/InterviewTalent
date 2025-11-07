@@ -33,7 +33,7 @@ import skillsMetricIllustration from "../assets/skills_metric_illustration.svg";
 import interviewActionIllustration from "../assets/interview_action_illustration.svg"; // Example: person with mic
 import resumeActionIllustration from "../assets/resume_action_illustration.svg"; // Example: person editing resume
 import aptitudeActionIllustration from "../assets/aptitude_action_illustration.svg"; // Example: person taking test
-import groupDiscussionActionIllustration from "../assets/group_discussion_action_illustration.svg"; // Example: group talking
+// import groupDiscussionActionIllustration from "../assets/group_discussion_action_illustration.svg"; // Example: group talking
 import insightsIllustration from "../assets/insights_illustration.svg"; // Example: person with lightbulb
 
 export default function Dashboard() {
@@ -76,13 +76,13 @@ export default function Dashboard() {
   ]);
 
   const developerIntegrations = [
-    {
-      title: "LeetCode Stats",
-      icon: Code,
-      color: "text-yellow-600 dark:text-yellow-400",
-      path: "/leetcode-profile",
-      illustration: leetCodeIllustration, // Illustration added
-    },
+    // {
+    //   title: "LeetCode Stats",
+    //   icon: Code,
+    //   color: "text-yellow-600 dark:text-yellow-400",
+    //   path: "/leetcode-profile",
+    //   illustration: leetCodeIllustration, // Illustration added
+    // },
     {
       title: "GitHub Activity",
       icon: Github,
@@ -115,7 +115,6 @@ export default function Dashboard() {
       icon: Calculator,
       color: "text-purple-600 dark:text-purple-400",
       path: "/aptitude",
-      status: "coming_soon",
       illustration: aptitudeActionIllustration,
     },
     // {
@@ -148,16 +147,16 @@ export default function Dashboard() {
               </p>
             </div>
             {/* Developer Integrations Cards - Redesigned */}
-            <div className="mt-8 lg:mt-0 grid grid-cols-1 md:grid-cols-2 gap-4 w-full md:w-auto">
+            <div className="mt-8 lg:mt-0  md:grid-cols-2 gap-4 w-full md:w-auto">
               <h2 className="sr-only">Developer Integrations</h2>{" "}
               {/* Screen reader only title */}
               {developerIntegrations.map((integration, index) => (
                 <Card
                   key={index}
-                  className="group cursor-pointer hover:shadow-lg transition-shadow duration-300 border border-border bg-card dark:bg-card-dark relative overflow-hidden flex flex-col justify-between items-start p-6"
+                  className="group  cursor-pointer hover:shadow-lg transition-shadow duration-300 border border-border bg-card dark:bg-card-dark relative overflow-hidden flex flex-col justify-between items-start p-6"
                   onClick={() => navigate(integration.path)}
                 >
-                  <div className="relative z-10">
+                  <div className="relative w-full z-10">
                     <h3 className="text-xl font-semibold text-foreground mb-1">
                       {integration.title}
                     </h3>
@@ -294,7 +293,7 @@ export default function Dashboard() {
             {/* Right Sidebar - Right 1/3 */}
             <div className="lg:col-span-1 space-y-6">
               {/* Insights & Tips - Redesigned */}
-              <section>
+              {/* <section>
                 <Card className="shadow-sm border border-border bg-card dark:bg-card-dark relative overflow-hidden p-6 flex flex-col justify-between group">
                   <div className="relative z-10">
                     <CardTitle className="flex items-center gap-2 text-foreground mb-2">
@@ -320,7 +319,7 @@ export default function Dashboard() {
                     Explore Tips <ChevronRight className="ml-2 w-4 h-4" />
                   </Button>
                 </Card>
-              </section>
+              </section> */}
 
               {/* New Voice Conversation Mock Interview Section - Retained unique style */}
               <section>

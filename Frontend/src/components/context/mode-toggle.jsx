@@ -2,9 +2,6 @@ import {
   Moon,
   Sun,
   Computer,
-  ArrowDownFromLineIcon,
-  ArrowDown,
-  ArrowDownNarrowWide,
   ChevronDown,
 } from "lucide-react";
 

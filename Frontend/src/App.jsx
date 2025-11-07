@@ -16,9 +16,12 @@ import { useEffect } from "react";
 import NotFound from "./pages/NotFound";
 import VoiceInterview from "./pages/VoiceInterview";
 import VoiceCall from "./pages/VoiceCall";
-import { Ripple } from "./components/magicui/ripple";
 import { LoadingScreen } from "./components/LoadingScreen";
 import ForgetPassword from "./pages/ForgetPassword";
+import Aptitude from "./pages/Aptitude";
+import AptitudeSection from "./pages/AptitudeSection";
+import AptitudeResult from "./pages/AptitudeResult";
+import AptitudeTopics from "./pages/AptitudeTopics";
 
 function App() {
   const { getUser, authenticated } = useContext(AuthContext);
@@ -112,6 +115,42 @@ function App() {
           element={
             <ProtectedRoute>
               <InterviewResult />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/aptitude"
+          element={
+            <ProtectedRoute>
+              <Aptitude />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/aptitude/type/:category"
+          element={
+            <ProtectedRoute>
+              <AptitudeTopics />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/aptitude/practice/:category/:topic"
+          element={
+            <ProtectedRoute>
+              <AptitudeSection /> 
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/aptitude/result/:category/:topic"
+          element={
+            <ProtectedRoute>
+              <AptitudeResult /> 
             </ProtectedRoute>
           }
         />

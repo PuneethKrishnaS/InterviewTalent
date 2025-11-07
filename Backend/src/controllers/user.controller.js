@@ -190,7 +190,7 @@ const forgetPasswordSendOTP = asyncHandler(async (req, res) => {
 
   const updateOTP = await User.findByIdAndUpdate(
     user._id,
-    { otp: genarateOTP },
+    { "otp.number": genarateOTP, "otp.validTill": Date.now() + 1000 * 60 * 60 },
     { new: true }
   );
 
@@ -234,7 +234,6 @@ const forgetPasswordSendOTP = asyncHandler(async (req, res) => {
     },
     (error, info) => {
       if (error) {
-        console.error("Error sending mail:", error);
         throw new appError(500, "Failed to send OTP email");
       } else {
         res
@@ -259,8 +258,17 @@ const forgetPasswordVerifyOTP = asyncHandler(async (req, res) => {
       throw new appError(500, "User does not exist");
     }
 
-    if (!user.otp === otp) {
-      throw new appError(500, "OTP do not match");
+    if (user.otp.number !== Number(otp)) {
+      throw new appError(400, "OTP do not match");
+    }
+
+    if (user.otp.validTill <= Date.now()) {
+      await User.findOneAndUpdate(
+        { email: email },
+        { "otp.number": null, "otp.validTill": null },
+        { new: true }
+      );
+      throw new appError(400, "OTP has expired");
     }
 
     res.status(200).json(new appResponse(200, "OTP Matches sucessfully"));
@@ -281,7 +289,7 @@ const forgetPasswordReset = asyncHandler(async (req, res) => {
 
     const user = await User.findOneAndUpdate(
       { email: email },
-      { password: hashedPassword },
+      { password: hashedPassword, "otp.number": null, "otp.validTill": null },
       { new: true }
     );
 

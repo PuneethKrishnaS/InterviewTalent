@@ -2,7 +2,7 @@ import React, { useContext, useEffect, useState, useRef } from "react";
 import MainNavbar from "@/components/global/MainNavbar";
 import { Ripple } from "@/components/magicui/ripple";
 import { Button } from "@/components/ui/button";
-import { ArrowLeftCircle, PhoneOff, StepBack } from "lucide-react";
+import { ArrowLeftCircle, ChevronLeft, PhoneOff, StepBack } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import Vapi from "@vapi-ai/web";
 import { voiceInterviewStore } from "@/components/store/voiceInterviewstore";
@@ -150,14 +150,9 @@ export default function VoiceCall() {
       <div className="w-full">
         <div className="container mx-auto lg:px-8 px-5 py-8 md:py-12">
           <nav className="flex justify-between items-center mb-8 mt-8">
-            <Button
-              variant="link"
-              onClick={() => navigate("/dashboard")}
-              className="cursor-pointer text-muted-foreground hover:text-foreground"
-            >
-              <ArrowLeftCircle className="mr-2 h-5 w-5" />
-              Back to Dashboard
-            </Button>
+          <Button variant="ghost" onClick={() => navigate("/dashboard")}>
+            <ChevronLeft className="h-4 w-4" /> Back
+          </Button>
             <div className="text-right">
               <h1 className="font-black text-xl md:text-2xl text-foreground">
                 Voice Conversation
