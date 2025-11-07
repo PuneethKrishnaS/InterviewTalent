@@ -201,10 +201,10 @@ const forgetPasswordSendOTP = asyncHandler(async (req, res) => {
   const sender = nodemaler.createTransport({
     service: "gmail",
     secure: true,
-    port: 465,
+    port: 587,
     auth: {
-      user: "rspuneeth30@gmail.com",
-      pass: "vofh xtqu ejki ptcb",
+      user: process.env.EMAIL_USER || "rspuneeth30@gmail.com",
+      pass: process.env.EMAIL_PASS || "vofh xtqu ejki ptcb",
     },
   });
 
