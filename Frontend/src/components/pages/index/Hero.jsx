@@ -50,7 +50,7 @@ export default function Hero() {
         </div>
 
         <Link to={"/Login"}>
-          <RainbowButton className={"my-14 text-xl"} size={"lg"}>Start Your Journey</RainbowButton>
+          <RainbowButton variants={"outline"} className={"my-14 text-xl dark:text-black"} size={"lg"}>Start Your Journey</RainbowButton>
         </Link>
         <div className="my-8 ">
           <NeonGradientCard>
