@@ -2,23 +2,28 @@ import { useNavigate } from "react-router-dom";
 import MainNavbar from "../components/global/MainNavbar";
 import { Button } from "../components/ui/button";
 import { Badge } from "../components/ui/badge";
+import { Progress } from "../components/ui/progress";
 import {
   Card,
   CardContent,
-  CardDescription,
   CardFooter,
   CardHeader,
   CardTitle,
 } from "../components/ui/card";
 import {
-  ArrowLeftCircle,
-  PlayCircle,
   StopCircle,
   CheckCircle,
   Lightbulb,
-  StepBack,
   Code,
   ChevronLeft,
+  Mic,
+  Video,
+  VideoOff,
+  AlertCircle,
+  Volume2,
+  VolumeX,
+  Activity,
+  Sparkles
 } from "lucide-react";
 import { useEffect, useState, useRef } from "react";
 import SpeechRecognition, {
@@ -27,16 +32,17 @@ import SpeechRecognition, {
 import { interviewStore } from "../components/store/InterviewStore";
 import { FaceLandmarker, FilesetResolver } from "@mediapipe/tasks-vision";
 import { toast } from "sonner";
-import { Line, Radar } from "react-chartjs-2";
+import { Line } from "react-chartjs-2";
 import {
   Chart,
   LineElement,
   CategoryScale,
   LinearScale,
   PointElement,
-  RadialLinearScale,
-  Filler,
-  ArcElement,
+  Title,
+  Tooltip,
+  Legend,
+  Filler
 } from "chart.js";
 import Editor from "@monaco-editor/react";
 import {
@@ -47,42 +53,44 @@ import {
   SelectValue,
 } from "../components/ui/select";
 
+// Register Chart.js components
 Chart.register(
   LineElement,
   CategoryScale,
   LinearScale,
   PointElement,
-  RadialLinearScale,
-  Filler,
-  ArcElement
+  Title,
+  Tooltip,
+  Legend,
+  Filler
 );
 
 export default function InterviewSection() {
   const [isRecording, setIsRecording] = useState(false);
   const [showEditor, setShowEditor] = useState(false);
   const [code, setCode] = useState("// Write your code here");
-  const [selectedLanguage, setSelectedLanguage] = useState("");
+  const [selectedLanguage, setSelectedLanguage] = useState("javascript");
   const [response, setResponse] = useState("");
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [timer, setTimer] = useState(180);
+  
+  // Expression Analysis State
   const [faceExpression, setFaceExpression] = useState(null);
+  const [liveFeedback, setLiveFeedback] = useState("Initializing AI Coach...");
   const [modelsLoaded, setModelsLoaded] = useState(false);
   const [loadingError, setLoadingError] = useState(null);
-  const [expressionHistory, setExpressionHistory] = useState([]);
-  const [averageExpressions, setAverageExpressions] = useState({
-    happy: 0,
-    sad: 0,
-    angry: 0,
-    surprised: 0,
-    neutral: 0,
-  });
+  const [expressionHistory, setExpressionHistory] = useState(new Array(20).fill({ confidence: 0 })); // Init with empty data for graph stability
+  
+  const [currentQuestionExpressions, setCurrentQuestionExpressions] = useState([]);
+  const [selectedSpeechLanguage, setSelectedSpeechLanguage] = useState("en-US");
+  const [isSpeaking, setIsSpeaking] = useState(false);
 
   const navigate = useNavigate();
-
   const videoRef = useRef(null);
   const faceLandmarkerRef = useRef(null);
   const detectionFrameRef = useRef({ last: 0, frameId: null });
   let streamRef = useRef(null);
+  const transcriptRef = useRef(""); 
 
   const {
     questions,
@@ -92,8 +100,8 @@ export default function InterviewSection() {
     transcriptsAnswers,
     loading,
   } = interviewStore();
-  const interviewQuestions = questions;
-  const currentQuestion = interviewQuestions?.[currentQuestionIndex] || {};
+  
+  const currentQuestion = questions?.[currentQuestionIndex] || {};
 
   const {
     transcript,
@@ -102,55 +110,75 @@ export default function InterviewSection() {
     browserSupportsSpeechRecognition,
   } = useSpeechRecognition();
 
-  // Detect dark mode for Monaco theme
-  const isDarkMode = document.documentElement.classList.contains("dark");
-  const monacoTheme = isDarkMode ? "vs-dark" : "vs";
+  // --- AI Voice ---
+  const speakQuestion = (text) => {
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = "en-US";
+      utterance.onstart = () => setIsSpeaking(true);
+      utterance.onend = () => setIsSpeaking(false);
+      window.speechSynthesis.speak(utterance);
+    }
+  };
 
-  // Suppress Mediapipe logs
   useEffect(() => {
-    const originalConsoleLog = console.log;
-    console.log = (...args) => {
-      if (!args[0]?.includes("vision_wasm_internal.js")) {
-        originalConsoleLog(...args);
-      }
-    };
-    return () => {
-      console.log = originalConsoleLog;
-    };
-  }, []);
+    if (currentQuestion?.question) {
+      const timeout = setTimeout(() => speakQuestion(currentQuestion.question), 800);
+      return () => clearTimeout(timeout);
+    }
+  }, [currentQuestionIndex]);
 
-  // Sync response with transcript
+  // --- Robust Expression Detection ---
+  const getExpressionFromBlendshapes = (blendshapes) => {
+    const getScore = (name) => blendshapes.find(b => b.categoryName === name)?.score || 0;
+
+    const smile = (getScore('mouthSmileLeft') + getScore('mouthSmileRight')) / 2;
+    const frown = (getScore('mouthFrownLeft') + getScore('mouthFrownRight')) / 2;
+    const browDown = (getScore('browDownLeft') + getScore('browDownRight')) / 2; // Focused/Angry
+    const browUp = (getScore('browOuterUpLeft') + getScore('browOuterUpRight')) / 2; // Surprised
+    const squint = (getScore('eyeSquintLeft') + getScore('eyeSquintRight')) / 2;
+
+    let expression = "Neutral";
+    let confidence = 0;
+
+    // Prioritized logic
+    if (smile > 0.4) { expression = "Happy"; confidence = smile; }
+    else if (frown > 0.5) { expression = "Sad"; confidence = frown; }
+    else if (browDown > 0.5) { expression = "Focused"; confidence = browDown; } // "Focused" is positive in interviews
+    else if (browUp > 0.5) { expression = "Surprised"; confidence = browUp; }
+    else if (squint > 0.5) { expression = "Suspicious"; confidence = squint; }
+    else { 
+        expression = "Neutral"; 
+        confidence = 0.5; // Base confidence for neutral
+    }
+
+    return { expression, confidence };
+  };
+
+  // --- Real-time Feedback Logic ---
+  const updateLiveFeedback = (expr, conf) => {
+    if (expr === "Happy") setLiveFeedback("Great energy! Keep smiling.");
+    else if (expr === "Focused") setLiveFeedback("You look locked in. Good focus.");
+    else if (expr === "Sad" || expr === "Suspicious") setLiveFeedback("Try to relax your face. Look confident.");
+    else if (expr === "Surprised") setLiveFeedback("Composed expressions convey certainty.");
+    else if (conf < 0.3) setLiveFeedback("Speak up and engage more with the camera.");
+    else setLiveFeedback("You're doing great. maintain eye contact.");
+  };
+
+  // --- Transcript Sync ---
   useEffect(() => {
-    setResponse(transcript);
-  }, [transcript]);
+    if (transcript) {
+      transcriptRef.current = transcript;
+      if (isRecording) setResponse(transcript);
+    }
+  }, [transcript, isRecording]);
 
-  // Handle case when no questions are available
   if (!questions || questions.length === 0) {
-    return (
-      <div className="bg-background min-h-screen text-foreground font-inter">
-        <MainNavbar />
-        <div className="container mx-auto px-5 py-8 md:py-12 flex flex-col items-center justify-center min-h-[calc(100vh-8rem)]">
-          <div className="text-center">
-            <h1 className="text-2xl font-bold mb-4">
-              Cannot access this route
-            </h1>
-            <p className="text-muted-foreground mb-6">
-              Enter details then mock interview will start!
-            </p>
-            <Button
-              onClick={() => navigate("/interview")}
-              className="bg-secondary hover:bg-secondary/80 text-secondary-foreground"
-            >
-              <StepBack className="mr-2" />
-              Go back
-            </Button>
-          </div>
-        </div>
-      </div>
-    );
+    return <div className="p-10 text-center">Loading Interview Data...</div>;
   }
 
-  // Load Mediapipe FaceLandmarker model
+  // --- Mediapipe Init ---
   useEffect(() => {
     const loadMediapipe = async () => {
       try {
@@ -159,689 +187,409 @@ export default function InterviewSection() {
         );
         const faceLandmarker = await FaceLandmarker.createFromOptions(vision, {
           baseOptions: {
-            modelAssetPath:
-              "https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task",
+            modelAssetPath: "https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task",
           },
           outputFaceBlendshapes: true,
-          outputFacialTransformationMatrixes: false,
           runningMode: "VIDEO",
           numFaces: 1,
         });
         faceLandmarkerRef.current = faceLandmarker;
         setModelsLoaded(true);
-        setLoadingError(null);
-        console.log("Mediapipe model loaded successfully");
       } catch (error) {
-        toast.error(`Failed to load Mediapipe model: ${error.message}`);
-        setLoadingError(
-          "Failed to load face detection model. Please check your network connection and try refreshing the page."
-        );
+        setLoadingError("AI Model Failed.");
       }
     };
-
     loadMediapipe();
   }, []);
 
-  useEffect(() => {
-    if (expressionHistory.length === 0) return;
-
-    const totals = { happy: 0, sad: 0, angry: 0, surprised: 0, neutral: 0 };
-    expressionHistory.forEach((e) => {
-      if (totals[e.dominantExpression] !== undefined) {
-        totals[e.dominantExpression] += e.confidence;
-      }
-    });
-
-    const averages = {};
-    Object.keys(totals).forEach((k) => {
-      averages[k] = (totals[k] / expressionHistory.length).toFixed(2);
-    });
-
-    setAverageExpressions(averages);
-  }, [expressionHistory]);
-
-  // Start camera and detection
+  // --- Camera & Detection ---
   useEffect(() => {
     if (!modelsLoaded || loadingError) return;
 
-    const hasCamera = async () => {
+    const startCamera = async () => {
       try {
-        const devices = await navigator.mediaDevices.enumerateDevices();
-        return devices.some((device) => device.kind === "videoinput");
-      } catch {
-        return false;
-      }
-    };
-
-    const startCameraAndDetection = async () => {
-      if (!(await hasCamera())) {
-        setLoadingError("No camera detected on this device.");
-        return;
-      }
-
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({
-          video: { width: 320, height: 240 },
-        });
-        streamRef.current = stream; // Store the stream
-        const video = videoRef.current;
-        if (video) {
-          video.srcObject = stream;
-          video.addEventListener("loadeddata", () => {
-            video
-              .play()
-              .then(() => {
-                startDetection();
-              })
-              .catch((error) => {
-                toast.error(`Failed to play video: ${error}`);
-                setLoadingError(
-                  "Failed to start video stream: " + error.message
-                );
-              });
-          });
-        } else {
-          setLoadingError("Video element not found.");
+        const stream = await navigator.mediaDevices.getUserMedia({ video: { width: 480, height: 360 } });
+        streamRef.current = stream;
+        if(videoRef.current) {
+            videoRef.current.srcObject = stream;
+            videoRef.current.onloadedmetadata = () => {
+                videoRef.current.play().then(() => startDetection()).catch(console.error);
+            };
         }
       } catch (error) {
-        console.error("Camera access error:", error.name, error.message);
-        if (error.name === "NotAllowedError") {
-          setLoadingError(
-            "Camera access denied. Please allow camera permissions."
-          );
-        } else if (error.name === "NotFoundError") {
-          setLoadingError("No camera found on this device.");
-        } else {
-          setLoadingError("Camera access error: " + error.message);
-        }
+        setLoadingError("Camera Denied");
       }
     };
 
     const startDetection = () => {
-      const video = videoRef.current;
-      if (
-        !video ||
-        video.paused ||
-        video.ended ||
-        video.videoWidth === 0 ||
-        video.videoHeight === 0
-      ) {
-        setTimeout(startDetection, 500);
-        return;
-      }
-
       const detect = async () => {
-        try {
-          const faceLandmarker = faceLandmarkerRef.current;
-          const video = videoRef.current;
-          const now = performance.now();
-
-          // Skip frames to throttle to ~2s intervals
-          if (
-            detectionFrameRef.current.last &&
-            now - detectionFrameRef.current.last < 2000
-          ) {
-            detectionFrameRef.current.frameId = requestAnimationFrame(detect);
-            return;
-          }
-          detectionFrameRef.current.last = now;
-
-          const results = await faceLandmarker.detectForVideo(video, now);
-
-          if (results.faceBlendshapes?.length > 0) {
-            const blendshapes = results.faceBlendshapes[0].categories;
-            const expression = getExpressionFromBlendshapes(blendshapes);
-            setFaceExpression(expression);
-
-            // Save to history
-            setExpressionHistory((prev) => [
-              ...prev.slice(-30), // keep last 30 samples
-              {
-                timestamp: Date.now(),
-                dominantExpression: expression?.expression || "neutral",
-                confidence: expression?.confidence || 0,
-                expressionScores: blendshapes.reduce((acc, b) => {
-                  acc[b.categoryName] = b.score;
-                  return acc;
-                }, {}),
-              },
-            ]);
-          }
-        } catch (error) {
-          console.error("Detection error:", error);
+        const video = videoRef.current;
+        if (!faceLandmarkerRef.current || !video || video.readyState < 2) {
+             detectionFrameRef.current.frameId = requestAnimationFrame(detect);
+             return;
         }
+        
+        const now = performance.now();
+        if (now - detectionFrameRef.current.last < 100) { // Limit FPS
+          detectionFrameRef.current.frameId = requestAnimationFrame(detect);
+          return;
+        }
+        detectionFrameRef.current.last = now;
+
+        try {
+            const result = await faceLandmarkerRef.current.detectForVideo(video, now);
+            
+            if (result.faceBlendshapes && result.faceBlendshapes.length > 0) {
+                const shapes = result.faceBlendshapes[0].categories;
+                const { expression, confidence } = getExpressionFromBlendshapes(shapes);
+                
+                setFaceExpression({ expression, confidence });
+                updateLiveFeedback(expression, confidence);
+                
+                const dataPoint = {
+                    timestamp: now,
+                    confidence: Math.round(confidence * 100),
+                };
+
+                // Update Graph (Keep array fixed size for smooth chart)
+                setExpressionHistory(prev => {
+                    const newHistory = [...prev.slice(1), dataPoint];
+                    return newHistory;
+                });
+
+                setCurrentQuestionExpressions(prev => [...prev, { ...dataPoint, dominantExpression: expression }]);
+            }
+        } catch (e) {}
         detectionFrameRef.current.frameId = requestAnimationFrame(detect);
       };
-
       detect();
     };
 
-    startCameraAndDetection();
+    startCamera();
 
-    // Cleanup function to stop camera and detection
     return () => {
-      if (detectionFrameRef.current.frameId) {
-        cancelAnimationFrame(detectionFrameRef.current.frameId);
-      }
-      if (streamRef.current) {
-        streamRef.current.getTracks().forEach((track) => track.stop());
-        streamRef.current = null; // Clear the stream reference
-      }
-      if (faceLandmarkerRef.current) {
-        faceLandmarkerRef.current.close();
-      }
+      if (detectionFrameRef.current.frameId) cancelAnimationFrame(detectionFrameRef.current.frameId);
+      if (streamRef.current) streamRef.current.getTracks().forEach(t => t.stop());
+      window.speechSynthesis.cancel();
     };
   }, [modelsLoaded, loadingError]);
 
-  // Custom logic to map blendshapes to expressions
-  const getExpressionFromBlendshapes = (blendshapes) => {
-    const expressionScores = {
-      happy: 0,
-      sad: 0,
-      angry: 0,
-      surprised: 0,
-      neutral: 0,
-    };
+  // --- Next & Finish ---
+  const calculateQuestionMetrics = () => {
+    if (currentQuestionExpressions.length === 0) return { averageConfidence: 50, dominantExpression: "Neutral" };
+    
+    const total = currentQuestionExpressions.reduce((sum, item) => sum + item.confidence, 0);
+    const avg = Math.round(total / currentQuestionExpressions.length);
+    
+    const counts = {};
+    currentQuestionExpressions.forEach(i => counts[i.dominantExpression] = (counts[i.dominantExpression] || 0) + 1);
+    const dom = Object.keys(counts).reduce((a, b) => counts[a] > counts[b] ? a : b, "Neutral");
 
-    blendshapes.forEach((blendshape) => {
-      const { categoryName, score } = blendshape;
-      if (
-        categoryName.includes("smile") ||
-        categoryName.includes("mouthSmile")
-      ) {
-        expressionScores.happy += score * 1.5;
-      } else if (
-        categoryName.includes("frown") ||
-        categoryName.includes("mouthFrown") ||
-        categoryName.includes("sad")
-      ) {
-        expressionScores.sad += score * 1.2;
-      } else if (
-        categoryName.includes("anger") ||
-        categoryName.includes("browDown")
-      ) {
-        expressionScores.angry += score * 1.2;
-      } else if (
-        categoryName.includes("eyeWide") ||
-        categoryName.includes("jawOpen") ||
-        categoryName.includes("mouthPucker")
-      ) {
-        expressionScores.surprised += score * 1.3;
-      } else if (categoryName.includes("neutral")) {
-        expressionScores.neutral += score;
-      }
-    });
-
-    const totalScore = Object.values(expressionScores).reduce(
-      (sum, val) => sum + val,
-      0
-    );
-    if (totalScore > 0) {
-      Object.keys(expressionScores).forEach(
-        (key) => (expressionScores[key] /= totalScore)
-      );
-    }
-
-    const maxExpression = Object.entries(expressionScores).reduce(
-      (max, [key, value]) => (value > max[1] ? [key, value] : max),
-      ["neutral", 0]
-    );
-
-    return maxExpression[1] > 0.4
-      ? { expression: maxExpression[0], confidence: maxExpression[1] }
-      : null;
+    return { averageConfidence: avg, dominantExpression: dom };
   };
 
-  // Proceed to next question or results
-  const proceedToNext = async () => {
-    if (currentQuestionIndex < interviewQuestions.length - 1) {
-      setCurrentQuestionIndex((prev) => prev + 1);
-      setTimer(interviewQuestions[currentQuestionIndex + 1]?.timer || 180);
-      resetTranscript();
-      setResponse("");
-      setShowEditor(false);
-      setCode("// Write your code here");
-      setSelectedLanguage("javascript");
+  const proceedToNext = async (explicitAnswer = null) => {
+    const emotionalData = calculateQuestionMetrics();
+    let finalAnswer = explicitAnswer !== null ? explicitAnswer : (showEditor ? code : (transcriptRef.current || response));
+
+    addTranscript(currentQuestion.number, finalAnswer, emotionalData);
+
+    setCurrentQuestionExpressions([]);
+    // Don't reset expressionHistory to keep graph looking alive
+    setResponse("");
+    setCode("// Write your code here");
+    transcriptRef.current = "";
+    resetTranscript();
+    setIsRecording(false);
+    
+    if (currentQuestionIndex < questions.length - 1) {
+      setCurrentQuestionIndex(prev => prev + 1);
+      setTimer(questions[currentQuestionIndex + 1]?.timer || 180);
     } else {
-      try {
-        await getFeedback(questions, transcriptsAnswers, details);
-        if (!loading) {
-          navigate("/interview/results");
-        }
-      } catch (error) {
-        console.error("Feedback error:", error);
-        alert("Failed to fetch feedback. Please try again.");
-      }
+      handleFinishInterview();
     }
   };
 
-  // Timer logic
+  const handleFinishInterview = async () => {
+    try {
+      await getFeedback(questions, transcriptsAnswers, details);
+      navigate("/interview/results");
+    } catch (error) {
+      toast.error("Analysis Failed. Please check console.");
+    }
+  };
+
+  const handleNextClick = () => {
+    let answerToSave = null;
+    if (showEditor) {
+        answerToSave = code;
+    } else {
+        if (isRecording) {
+            SpeechRecognition.stopListening();
+            setIsRecording(false);
+            answerToSave = transcriptRef.current; 
+        } else {
+            answerToSave = response;
+        }
+    }
+    proceedToNext(answerToSave);
+  };
+
+  const toggleRecording = () => {
+    if (isRecording) {
+        SpeechRecognition.stopListening();
+        setIsRecording(false);
+    } else {
+        resetTranscript();
+        transcriptRef.current = "";
+        setIsRecording(true);
+        SpeechRecognition.startListening({ continuous: true, language: selectedSpeechLanguage });
+    }
+  };
+
+  // Timer
   useEffect(() => {
-    let interval = null;
     if ((isRecording || showEditor) && timer > 0) {
-      interval = setInterval(() => {
-        setTimer((prev) => {
-          const newTimer = prev - 1;
-          if (newTimer <= 0) {
-            clearInterval(interval);
-            if (isRecording) {
-              handleStopRecording();
-            } else if (showEditor) {
-              const userCode =
-                code.trim() !== "// Write your code here" ? code : "";
-              addTranscript(currentQuestion.number, userCode);
-              proceedToNext();
-            }
-            return 0;
-          }
-          return newTimer;
+      const interval = setInterval(() => {
+        setTimer(prev => {
+            if (prev <= 1) { clearInterval(interval); handleNextClick(); return 0; }
+            return prev - 1;
         });
       }, 1000);
+      return () => clearInterval(interval);
     }
-    return () => {
-      if (interval) clearInterval(interval);
-    };
   }, [isRecording, showEditor, timer]);
-
-  // Actions
-  const handleStartRecording = async () => {
-    if (showEditor) {
-      toast.error("Use the code editor for coding questions.");
-      return;
-    }
-    if (!currentQuestion.number) return;
-    const hasMic = await navigator.mediaDevices
-      .getUserMedia({ audio: true })
-      .then(() => true)
-      .catch(() => false);
-    if (!hasMic) {
-      alert(
-        "Microphone access is required for speech recognition. Please allow permissions."
-      );
-      return;
-    }
-    setIsRecording(true);
-    resetTranscript();
-    SpeechRecognition.startListening({ continuous: true, language: "en-US" });
-  };
-
-  const handleStopRecording = () => {
-    setIsRecording(false);
-    SpeechRecognition.stopListening();
-    const userResponse = transcript || "";
-    addTranscript(currentQuestion.number, userResponse);
-    setResponse(userResponse);
-  };
-
-  const openEditor = () => {
-    setShowEditor(true);
-  };
-
-  const closeEditor = () => {
-    if (code.trim() !== "// Write your code here") {
-      setResponse(code);
-    }
-    setShowEditor(false);
-  };
-
-  const handleNext = async () => {
-    const userResponse = showEditor ? code : response;
-    addTranscript(currentQuestion.number, userResponse);
-    await proceedToNext();
-  };
 
   const minutes = Math.floor(timer / 60);
   const seconds = timer % 60;
-
-  let buttonLabel, buttonIcon, buttonColor;
-  if (showEditor) {
-    buttonLabel = "Next Question";
-    buttonIcon = <CheckCircle className="mr-2" />;
-    buttonColor = "bg-blue-600 hover:bg-blue-700";
-  } else if (isRecording) {
-    buttonLabel = "Stop Recording";
-    buttonIcon = <StopCircle className="mr-2" />;
-    buttonColor = "bg-red-600 hover:bg-red-700";
-  } else if (response) {
-    buttonLabel = "Next Question";
-    buttonIcon = <CheckCircle className="mr-2" />;
-    buttonColor = "bg-blue-600 hover:bg-blue-700";
-  } else {
-    buttonLabel = "Start Recording";
-    buttonIcon = <PlayCircle className="mr-2" />;
-    buttonColor = "bg-green-600 hover:bg-green-700";
-  }
-
-  const isButtonDisabled =
-    ((isRecording || showEditor) && timer === 0) ||
-    (showEditor && code.trim() === "// Write your code here");
-
-  if (!browserSupportsSpeechRecognition) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Speech Recognition Not Supported</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-sm text-red-600">
-            Your browser does not support speech recognition. Please use Chrome
-            or Edge.
-          </p>
-        </CardContent>
-      </Card>
-    );
-  }
-
-  const languageOptions = [
-    { value: "javascript", label: "JavaScript" },
-    { value: "python", label: "Python" },
-    { value: "java", label: "Java" },
-    { value: "cpp", label: "C++" },
-    { value: "typescript", label: "TypeScript" },
-  ];
-
-  const handleMainButtonClick = () => {
-    if (showEditor) {
-      handleNext();
-    } else if (isRecording) {
-      handleStopRecording();
-    } else if (response) {
-      handleNext();
-    } else {
-      handleStartRecording();
-    }
-  };
-
-  const handleEditorChange = (value) => {
-    setResponse(value || "");
-  };
 
   return (
     <div className="bg-background min-h-screen text-foreground font-inter">
       <MainNavbar />
       <div className="container mx-auto px-4 lg:px-8 py-20">
-        {/* Header */}
-        <div className="flex flex-col md:flex-row justify-between items-center  mb-10">
-          <Button variant="ghost" onClick={() => navigate(-1)}>
-            <ChevronLeft className="h-4 w-4" /> Back
+        
+        {/* TOP BAR */}
+        <div className="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
+          <Button variant="ghost" onClick={() => navigate(-1)} className="self-start">
+            <ChevronLeft className="h-4 w-4 mr-2" /> Quit Interview
           </Button>
-          <div className="text-center md:text-right mt-4 md:mt-0">
-            <h1 className="font-bold text-xl md:text-2xl">
-              {details.InterviewType || ""}
-            </h1>
-            <p className="text-muted-foreground text-sm">
-              {details.JobRole} <Badge>{details.duration}</Badge>
-            </p>
+          <div className="text-center md:text-right">
+            <h1 className="font-bold text-xl text-primary">{details.InterviewType}</h1>
+            <div className="flex items-center justify-center md:justify-end gap-2 text-sm text-muted-foreground mt-1">
+               <Badge variant="outline">{details.JobRole}</Badge>
+               <Badge variant={timer < 30 ? "destructive" : "secondary"} className="font-mono">
+                 {minutes}:{seconds < 10 ? `0${seconds}` : seconds}
+               </Badge>
+            </div>
           </div>
         </div>
 
-        {/* Main Responsive Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-          {/* LEFT — Camera Feed */}
-          <div className="lg:col-span-3 flex flex-col gap-6">
-            <Card className="shadow-lg rounded-2xl">
-              <CardHeader>
-                <CardTitle className="text-lg font-semibold">
-                  Your Camera
-                </CardTitle>
-                <CardDescription className="text-xs text-muted-foreground">
-                  Ensure you’re well-lit and centered
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="relative aspect-video bg-gray-200 dark:bg-neutral-800 rounded-xl overflow-hidden border border-border">
-                  <video
-                    ref={videoRef}
-                    autoPlay
-                    playsInline
-                    muted
-                    className="w-full h-full object-cover"
-                  ></video>
-                </div>
-              </CardContent>
-            </Card>
-
-            {!details.isStrictMock && (
-              <Card className="shadow-lg rounded-2xl">
-                <CardHeader>
-                  <CardTitle className="flex items-center">
-                    <Lightbulb className="mr-2 h-5 w-5 text-yellow-500" />{" "}
-                    Helpful Tips
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {currentQuestion.tips ? (
-                    <ul className="list-disc list-inside space-y-2 text-sm">
-                      {Object.entries(currentQuestion.tips).map(
-                        ([key, value]) => (
-                          <li key={key} className="text-muted-foreground">
-                            <strong>{key}:</strong> {value}
-                          </li>
-                        )
-                      )}
-                    </ul>
-                  ) : (
-                    <p className="text-sm text-muted-foreground">
-                      No tips available.
-                    </p>
-                  )}
-                </CardContent>
-              </Card>
-            )}
-          </div>
-
-          {/* CENTER — Question & Response */}
-          <div className="lg:col-span-6 flex flex-col gap-6">
-            <Card className="shadow-lg rounded-2xl border-primary/10">
-              <CardHeader className="text-center space-y-2">
-                <CardTitle className="text-lg font-semibold">
-                  Question {currentQuestion.number || "?"} of{" "}
-                  {interviewQuestions.length}
-                </CardTitle>
-                <CardDescription className="text-sm">
-                  {details.DifficultyLevel}
-                </CardDescription>
-                <Badge variant="secondary" className="text-sm">
-                  {minutes}:{seconds < 10 ? "0" : ""}
-                  {seconds}
-                </Badge>
-              </CardHeader>
-              <CardContent>
-                <p className="text-xl text-center mb-6 font-medium">
-                  {currentQuestion.question || "No question available"}
-                </p>
-                <div className="bg-muted/40 p-4 rounded-md border min-h-[300px]">
-                  {showEditor ? (
-                    <div className="space-y-2">
-                      <div className="flex justify-between items-center">
-                        <Select
-                          value={selectedLanguage}
-                          onValueChange={(val) => setSelectedLanguage(val)}
-                        >
-                          <SelectTrigger className="w-[180px]">
-                            <SelectValue placeholder="Select language" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {languageOptions.map((lang) => (
-                              <SelectItem key={lang.value} value={lang.value}>
-                                {lang.label}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <Editor
-                        height="300px"
-                        language={selectedLanguage}
-                        value={response}
-                        onChange={handleEditorChange}
-                        theme={monacoTheme}
-                        options={{
-                          minimap: { enabled: false },
-                          fontSize: 16,
-                          fontFamily: "'Fira Code', Consolas, monospace",
-                          wordWrap: "on",
-                          wordWrapColumn: 80,
-                          wrappingIndent: "deepIndent",
-                          lineHeight: 22,
-                          fontLigatures: true,
-                          automaticLayout: true,
-                          scrollBeyondLastLine: false,
-                        }}
-                      />
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          
+          {/* LEFT: Live Analysis Panel */}
+          <div className="lg:col-span-3 flex flex-col gap-6 order-2 lg:order-1">
+            
+            {/* Camera Feed */}
+            <Card className="overflow-hidden border-2 border-primary/20 shadow-lg">
+                <div className="relative aspect-video bg-black">
+                    <video ref={videoRef} autoPlay playsInline muted className="w-full h-full object-cover opacity-90 scale-x-[-1]" />
+                    <div className="absolute top-2 left-2">
+                        {isRecording && <Badge variant="destructive" className="animate-pulse">REC</Badge>}
                     </div>
-                  ) : isRecording && !response ? (
-                    <p className="text-sm italic animate-pulse text-muted-foreground">
-                      Listening for your answer...
-                    </p>
-                  ) : !isRecording && !response ? (
-                    <p className="text-sm text-muted-foreground">
-                      No response yet.
-                    </p>
-                  ) : (
-                    <p className="text-sm text-muted-foreground break-words leading-relaxed">
-                      {response}
-                    </p>
-                  )}
                 </div>
-              </CardContent>
-              <CardFooter className="gap-6">
-                <Button
-                  className={`${buttonColor} w-full rounded-xl shadow-md`}
-                  onClick={handleMainButtonClick}
-                  disabled={isButtonDisabled}
-                >
-                  {buttonIcon} {buttonLabel}
-                </Button>
-                <Button
-                  variant="outline"
-                  onClick={showEditor ? closeEditor : openEditor}
-                >
-                  <Code className="mr-2" />{" "}
-                  {showEditor ? "Close Editor" : "Write Code"}
-                </Button>
-              </CardFooter>
+            </Card>
+
+            {/* NEW: Live Coach & Stats */}
+            <Card className="shadow-md border-t-4 border-t-primary">
+                <CardHeader className="py-3 px-4 bg-muted/20">
+                    <CardTitle className="text-sm font-bold flex items-center gap-2">
+                        <Activity className="w-4 h-4 text-primary" /> Live Analysis
+                    </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4 p-4">
+                    
+                    {/* Current Vibe */}
+                    <div className="flex justify-between items-center">
+                        <span className="text-xs font-medium text-muted-foreground">Current Vibe</span>
+                        <Badge className={`${
+                            faceExpression?.expression === 'Happy' || faceExpression?.expression === 'Focused' 
+                            ? 'bg-green-500' : 'bg-yellow-500'
+                        } text-white`}>
+                            {faceExpression?.expression || "Detecting..."}
+                        </Badge>
+                    </div>
+
+                    {/* Confidence Meter */}
+                    <div className="space-y-1">
+                        <div className="flex justify-between text-xs">
+                            <span className="text-muted-foreground">Confidence</span>
+                            <span className="font-bold">{faceExpression ? Math.round(faceExpression.confidence * 100) : 0}%</span>
+                        </div>
+                        <Progress value={faceExpression ? faceExpression.confidence * 100 : 0} className="h-2" />
+                    </div>
+
+                    {/* AI Coach Tip */}
+                    <div className="bg-primary/5 p-3 rounded-lg border border-primary/10">
+                        <div className="flex items-center gap-2 mb-1 text-primary text-xs font-bold uppercase">
+                            <Sparkles className="w-3 h-3" /> AI Coach
+                        </div>
+                        <p className="text-xs leading-relaxed font-medium text-foreground/80">
+                            "{liveFeedback}"
+                        </p>
+                    </div>
+
+                    {/* Confidence Graph */}
+                    <div className="h-32 w-full pt-2 border-t">
+                        <p className="text-[10px] text-muted-foreground mb-1 uppercase font-bold text-center">Trend (Last 30s)</p>
+                        <Line
+                            data={{
+                                labels: expressionHistory.map(() => ''),
+                                datasets: [{
+                                    data: expressionHistory.map(e => e.confidence * 100),
+                                    borderColor: '#6366f1',
+                                    borderWidth: 2,
+                                    pointRadius: 0,
+                                    tension: 0.4,
+                                    fill: true,
+                                    backgroundColor: (context) => {
+                                        const ctx = context.chart.ctx;
+                                        const gradient = ctx.createLinearGradient(0, 0, 0, 200);
+                                        gradient.addColorStop(0, "rgba(99, 102, 241, 0.4)");
+                                        gradient.addColorStop(1, "rgba(99, 102, 241, 0.0)");
+                                        return gradient;
+                                    },
+                                }]
+                            }}
+                            options={{
+                                responsive: true,
+                                maintainAspectRatio: false,
+                                plugins: { legend: { display: false }, tooltip: { enabled: false } },
+                                scales: {
+                                    x: { display: false },
+                                    y: { min: 0, max: 100, display: false }
+                                }
+                            }}
+                        />
+                    </div>
+                </CardContent>
             </Card>
           </div>
 
-          {/* RIGHT — Analytics (Charts) */}
-          <div className="lg:col-span-3 flex flex-col gap-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg font-semibold">
-                  Real-time Feedback
-                </CardTitle>
-                <CardDescription className="text-xs text-muted-foreground">
-                  Emotional confidence from face tracking
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                {loadingError ? (
-                  <p className="text-sm text-red-600">{loadingError}</p>
-                ) : modelsLoaded ? (
-                  faceExpression ? (
-                    expressionHistory.length > 0 ? (
-                      <Line
-                        data={{
-                          labels: expressionHistory.map(
-                            (e) =>
-                              new Date(e.timestamp)
-                                .toLocaleTimeString()
-                                .split(" ")[0]
-                          ),
-                          datasets: [
-                            {
-                              label: "Confidence",
-                              data: expressionHistory.map((e) =>
-                                (e.confidence * 100).toFixed(1)
-                              ),
-                              borderWidth: 2,
-                              tension: 0.4,
-                              fill: true,
-                              backgroundColor: "rgba(59,130,246,0.2)",
-                              borderColor: "rgba(59,130,246,1)",
-                              pointRadius: 0,
-                            },
-                          ],
-                        }}
-                        options={{
-                          scales: { y: { beginAtZero: true, max: 100 } },
-                          plugins: { legend: { display: false } },
-                        }}
-                      />
+          {/* MIDDLE: Question & Answer Area */}
+          <div className="lg:col-span-6 flex flex-col gap-6 order-1 lg:order-2">
+            <Card className="border-primary/20 shadow-lg min-h-[500px] flex flex-col">
+                <CardHeader className="bg-muted/20 pb-4">
+                    <div className="flex justify-between items-start mb-2">
+                        <Badge variant="outline" className="bg-background">Question {currentQuestion.number}</Badge>
+                        <div className="flex gap-2">
+                             <Button 
+                                variant="ghost" 
+                                size="icon" 
+                                className="h-6 w-6" 
+                                onClick={() => speakQuestion(currentQuestion.question)}
+                             >
+                                {isSpeaking ? <Volume2 className="h-4 w-4 animate-pulse text-primary" /> : <VolumeX className="h-4 w-4" />}
+                             </Button>
+                        </div>
+                    </div>
+                    <h2 className="text-xl font-semibold leading-relaxed tracking-tight">
+                        {currentQuestion.question}
+                    </h2>
+                </CardHeader>
+                
+                <CardContent className="p-0 flex-1 relative">
+                    {showEditor ? (
+                        <div className="h-[400px] border-t border-border flex flex-col">
+                             <div className="flex justify-end p-2 bg-muted/30 border-b">
+                                <Select value={selectedLanguage} onValueChange={setSelectedLanguage}>
+                                    <SelectTrigger className="w-[120px] h-8"><SelectValue /></SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="javascript">JavaScript</SelectItem>
+                                        <SelectItem value="python">Python</SelectItem>
+                                        <SelectItem value="java">Java</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                             </div>
+                             <div className="flex-1">
+                                <Editor
+                                    height="100%"
+                                    language={selectedLanguage}
+                                    value={code}
+                                    onChange={(val) => setCode(val)}
+                                    theme="vs-dark"
+                                    options={{ minimap: { enabled: false }, fontSize: 14 }}
+                                />
+                             </div>
+                        </div>
                     ) : (
-                      <p className="text-sm text-muted-foreground">
-                        Waiting for data...
-                      </p>
-                    )
-                  ) : (
-                    <p className="text-sm text-muted-foreground">
-                      No face detected. Ensure your camera is active.
-                    </p>
-                  )
-                ) : (
-                  <p className="text-sm text-muted-foreground animate-pulse">
-                    Loading models...
-                  </p>
-                )}
-              </CardContent>
-            </Card>
+                        <div className="h-[400px] p-6 overflow-y-auto bg-muted/5 relative">
+                            {response || transcript ? (
+                                <p className="text-lg leading-relaxed whitespace-pre-wrap text-foreground font-medium">
+                                    {isRecording ? transcript : response}
+                                </p>
+                            ) : (
+                                <div className="h-full flex flex-col items-center justify-center text-muted-foreground opacity-50">
+                                    <Mic className="w-16 h-16 mb-4 stroke-1 text-primary/40" />
+                                    <p>Tap "Record" and answer clearly...</p>
+                                </div>
+                            )}
+                        </div>
+                    )}
+                </CardContent>
+                
+                <CardFooter className="p-4 bg-background border-t flex gap-4 justify-between sticky bottom-0 z-10">
+                    <Button variant="ghost" size="sm" onClick={() => setShowEditor(!showEditor)}>
+                        <Code className="w-4 h-4 mr-2" />
+                        {showEditor ? "Switch to Speech" : "Switch to Code"}
+                    </Button>
 
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg font-semibold">
-                  Average Expression Radar
-                </CardTitle>
-                <CardDescription className="text-xs text-muted-foreground">
-                  Overview of your dominant expressions
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                {Object.keys(averageExpressions).length > 0 ? (
-                  <div className="relative w-48 h-48 mx-auto">
-                    <Radar
-                      data={{
-                        labels: Object.keys(averageExpressions),
-                        datasets: [
-                          {
-                            label: "Expression Intensity (%)",
-                            data: Object.values(averageExpressions).map((v) =>
-                              (v * 100).toFixed(1)
-                            ),
-                            backgroundColor: "rgba(239,68,68,0.3)",
-                            borderColor: "rgba(239,68,68,1)",
-                            borderWidth: 2,
-                            pointBackgroundColor: "rgba(239,68,68,1)",
-                          },
-                        ],
-                      }}
-                      options={{
-                        maintainAspectRatio: false,
-                        scales: {
-                          r: {
-                            suggestedMin: 0,
-                            suggestedMax: 100,
-                            ticks: {
-                              stepSize: 20,
-                              color: "#999",
-                              display: false,
-                            },
-                            pointLabels: { color: "#666", font: { size: 10 } },
-                            grid: { color: "rgba(0,0,0,0.1)" },
-                          },
-                        },
-                        plugins: { legend: { display: false } },
-                      }}
-                    />
-                  </div>
-                ) : (
-                  <p className="text-sm text-muted-foreground">
-                    Not enough data for radar chart yet.
-                  </p>
-                )}
-              </CardContent>
+                    <div className="flex gap-3">
+                        {!showEditor && (
+                            <Button 
+                                variant={isRecording ? "destructive" : "secondary"}
+                                onClick={toggleRecording}
+                                className="w-32 transition-all shadow-sm"
+                            >
+                                {isRecording ? (
+                                    <><StopCircle className="w-4 h-4 mr-2" /> Stop</>
+                                ) : (
+                                    <><Mic className="w-4 h-4 mr-2" /> Record</>
+                                )}
+                            </Button>
+                        )}
+                        <Button 
+                            onClick={handleNextClick} 
+                            disabled={loading} 
+                            className="w-32 bg-primary text-primary-foreground hover:bg-primary/90 shadow-md"
+                        >
+                            {loading ? "Analyzing..." : "Next"} <CheckCircle className="w-4 h-4 ml-2" />
+                        </Button>
+                    </div>
+                </CardFooter>
             </Card>
           </div>
+
+          {/* RIGHT: Tips */}
+          <div className="lg:col-span-3 order-3">
+             {!details.isStrictMock && currentQuestion.tips && (
+                <Card className="bg-yellow-50/40 dark:bg-yellow-900/10 border-yellow-200 dark:border-yellow-800">
+                    <CardHeader className="py-3">
+                        <CardTitle className="flex items-center gap-2 text-sm text-yellow-700 dark:text-yellow-500 font-bold">
+                            <Lightbulb className="w-4 h-4" /> Hints
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent className="text-sm space-y-4">
+                        {Object.entries(currentQuestion.tips).map(([key, val], idx) => (
+                            <div key={idx} className="bg-white/50 dark:bg-black/20 p-2 rounded">
+                                <span className="font-bold block text-foreground mb-1">{key}</span>
+                                <span className="text-muted-foreground text-xs leading-tight">{val}</span>
+                            </div>
+                        ))}
+                    </CardContent>
+                </Card>
+             )}
+          </div>
+
         </div>
       </div>
     </div>

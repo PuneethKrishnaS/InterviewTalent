@@ -6,7 +6,7 @@ export const interviewStore = create((set, get) => ({
   loading: false,
   questions: [],
   error: false,
-  transcriptsAnswers: [],
+  transcriptsAnswers: [], // stores { questionNumber, answer, emotionalData }
   interviewData: {},
   interviewFeedback: {},
 
@@ -29,21 +29,31 @@ export const interviewStore = create((set, get) => ({
     }
   },
 
-  addTranscript: (questionNumber, answer) => {
+  // UPDATED: Now accepts emotionalData
+  addTranscript: (questionNumber, answer, emotionalData) => {
     const { transcriptsAnswers } = get();
-    const updated = [...transcriptsAnswers];
-    updated.push({ questionNumber, answer });
-    set({ transcriptsAnswers: updated });
+    // Remove existing answer for this question if it exists (to prevent duplicates)
+    const filtered = transcriptsAnswers.filter(t => t.questionNumber !== questionNumber);
+    
+    const newEntry = { 
+        questionNumber, 
+        answer, 
+        emotionalData: emotionalData || { averageConfidence: 0, dominantExpression: "neutral" } 
+    };
+    
+    set({ transcriptsAnswers: [...filtered, newEntry] });
   },
 
   getFeedback: async (questions, answers, details) => {
     set({ loading: true });
 
+    // Merge Questions with User Answers AND Emotional Data
     const allInterviewData = questions.map((q) => {
       const match = answers.find((a) => a.questionNumber === q.number);
       return {
         ...q,
         userAnswer: match ? match.answer : "",
+        emotionalData: match ? match.emotionalData : { averageConfidence: 0, dominantExpression: "neutral" }
       };
     });
 
@@ -55,7 +65,7 @@ export const interviewStore = create((set, get) => ({
     };
 
     const res = await api.post("/api/v1/interview/getfeedback", {
-      interviewData,
+      interviewData, // This now contains the merged data
       questions,
       details,
     });
